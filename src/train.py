@@ -74,9 +74,6 @@ class CelebA(object):
     def train(self, nb_epochs, data_loader):
         """Train model on data"""
 
-        # Set learning phase
-        self.model.train(True)
-
         # Initialize tracked quantities
         G_loss, D_loss, times = [], [], AverageMeter()
 
