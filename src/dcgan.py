@@ -29,7 +29,7 @@ class DCGAN(nn.Module):
     and weight initialization schemes. No optimizers are attached.
     """
 
-    def __init__(self, latent_dim=100, batch_size=128):
+    def __init__(self, loss="og", latent_dim=100, batch_size=128):
         super(DCGAN, self).__init__()
         self.G = Generator()
         self.D = Discriminator()
@@ -45,6 +45,15 @@ class DCGAN(nn.Module):
                 m.weight.data.normal_(0, 0.02)
                 m.bias.data.zero_()
 
+
+    def og_loss(self, y_real, y_fake):
+        """Original loss from Goodfellow's GAN paper"""
+        raise NotImplementedError
+
+
+    def wasserstein_loss(self, y_real, y_fake):
+        """Loss from Arjovsky's WGAN paper"""
+        raise NotImplementedError
 
 
 class Generator(nn.Module):
