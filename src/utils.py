@@ -19,21 +19,20 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset
 import numpy as np
 
 
-def progress_bar(batch_idx, report_interval, last_loss):
+def progress_bar(batch_idx, report_interval, G_loss, D_loss):
     """Neat progress bar to track training"""
 
     bar_size = 25
     progress = (((batch_idx - 1) % report_interval) + 1) / report_interval
     fill = int(progress * bar_size)
-    print("\rBatch {:>5d} [{}{}] Loss: {:.4f}".format(batch_idx,
-        u"\u25A0" * fill, " " * (bar_size - fill), last_loss), end="")
+    print("\rBatch {:>2d} [{}{}] G loss: {:.4f} | D loss: {:.4f}".format(batch_idx, u"\u25A0" * fill, " " * (bar_size - fill), G_loss, D_loss), end="")
 
 
-def show_learning_stats(epoch, nb_epochs, loss_avg, error, elapsed):
+def show_learning_stats(batch_idx, num_batches, g_loss, d_loss, elapsed):
     """Format printing"""
 
     dec = str(int(np.ceil(np.log10(num_batches))))
-    print("Batch {:>{dec}d} / {:d} | Avg loss: {:.4f} | Avg error bits: {:.2f} | Avg time/seq: {:>3d} ms".format(batch_idx, num_batches, loss_avg, error, elapsed, dec=dec))
+    print("Batch {:>{dec}d} / {:d} | G loss: {:>2.4f} | D loss: {:.4f} | Avg time per batch: {:d} ms".format(batch_idx, num_batches, g_loss, d_loss, elapsed // num_batches, dec=dec))
 
 
 def compute_mean_std(data_loader):
@@ -72,8 +71,16 @@ def load_dataset(root_dir, batch_size, normalize=True, redux=True):
     return data_loader
 
 
+def unnormalize(img, mean=[0.5066, 0.4261, 0.3836],
+    std=[0.2589, 0.2380, 0.2340]):
+    """Unnormalize image"""
 
-class AverageMeter(object):
+    return img.cpu().data * torch.Tensor(std).view(-1, 1, 1) + \
+        torch.Tensor(mean).view(-1, 1, 1)
+
+
+
+class AvgMeter(object):
     """Compute and store the average and current value"""
 
     def __init__(self):
