@@ -32,6 +32,7 @@ class CelebA(object):
 
     def __init__(self, train_params, ckpt_params, gan_params):
         # Training parameters
+        self.root_dir = train_params["root_dir"]
         self.gen_dir = train_params["gen_dir"]
         self.batch_size = train_params["batch_size"]
         self.train_len = train_params["train_len"]
@@ -44,7 +45,6 @@ class CelebA(object):
         self.batch_report_interval = ckpt_params["batch_report_interval"]
         self.stats_path = ckpt_params["stats_path"]
         self.ckpts_path = ckpt_params["ckpts_path"]
-        self.epoch_ckpt_interval = ckpt_params["epoch_ckpt_interval"]
 
         # Create directories if they don't exist
         if not os.path.isdir(self.stats_path):
@@ -58,6 +58,11 @@ class CelebA(object):
         self.gan_loss = gan_params["gan_loss"]
         self.latent_dim = gan_params["latent_dim"]
 
+        # Make sure report interval divides total num of batches
+        self.num_batches = self.train_len // self.batch_size
+        assert self.num_batches % self.batch_report_interval == 0, \
+            "Batch report interval must divide total number of batches per epoch"
+
         # Get ready to ruuummmmmmble
         self.compile()
 
@@ -65,18 +70,15 @@ class CelebA(object):
     def compile(self):
         """Compile model (loss function, optimizers, etc.)"""
 
-        self.gan = DCGAN(self.gan_loss, self.latent_dim, self.batch_size)
+        # Create new GAN
+        self.gan = DCGAN(self.gan_loss, self.latent_dim, self.batch_size,
+            self.use_cuda)
 
-        #TODO: Pass a functional to self.criterion that matches the loss
-        # type in DCGAN
-        self.criterion = nn.BCELoss()
-
+        # Set optimizers for generator and discriminator
         if self.optim is "adam":
-            # Generator
             self.G_optimizer = optim.Adam(self.gan.G.parameters(),
                 lr=self.learning_rate,
                 betas=self.momentum)
-            # Discriminator
             self.D_optimizer = optim.Adam(self.gan.D.parameters(),
                 lr=self.learning_rate,
                 betas=self.momentum)
@@ -87,46 +89,51 @@ class CelebA(object):
         # CUDA support
         if torch.cuda.is_available() and self.use_cuda:
             self.gan = self.gan.cuda()
-            self.criterion = self.criterion.cuda()
 
 
     def save_model(self, epoch):
-        """Save model (both PyTorch parameters and tracked stats)"""
+        """Save model (generator only, for now)"""
 
-        filename_pt = "{}/gan-epoch-{}".format(self.ckpts_path, epoch + 1)
+        filename_pt = "{}/dcgan-gen-epoch-{}".format(self.ckpts_path, epoch + 1)
         filename_pt += ".pt"
         torch.save(self.gan.G.state_dict(), filename_pt)
-        print("Saving generator model checkpoint to: {}".format(filename_pt))
+        sep = "\n" + 80 * "-" + "\n"
+        print("Saving generator checkpoint to: {}{}".format(filename_pt, sep))
 
 
     def load_model(self, filename):
         """Load PyTorch model"""
 
         ckpt_filename = self.ckpts_path + "/" + filename + ".pt"
-        print("Loading generator model checkpoint from: {}".format(ckpt_filename))
+        print("Loading generator checkpoint from: {}".format(ckpt_filename))
         self.gan.G.load_state_dict(torch.load(ckpt_filename))
 
 
     def train(self, nb_epochs, data_loader):
         """Train model on data"""
 
-        # Initialize tracked quantities
-        G_loss, D_loss, times = [], [], utils.AvgMeter()
-        num_batches = self.train_len // self.batch_size
+        # Initialize tracked quantities and prepare everything
+        G_all_losses, D_all_losses, times = [], [], utils.AvgMeter()
+        utils.format_hdr(self.gan, self.root_dir, self.train_len)
+        start = datetime.datetime.now()
 
         # Train
-        #start = datetime.datetime.now()
         for epoch in range(nb_epochs):
-            print("[Epoch {:d} / {:d}]".format(epoch + 1, nb_epochs))
+            print("EPOCH {:d} / {:d}".format(epoch + 1, nb_epochs))
             G_losses, D_losses = utils.AvgMeter(), utils.AvgMeter()
+            start_epoch = datetime.datetime.now()
 
+            avg_time_per_batch = utils.AvgMeter()
             # Mini-batch SGD
             for batch_idx, (x, _) in enumerate(data_loader):
-
+                batch_start = datetime.datetime.now()
                 # Print progress bar
                 utils.progress_bar(batch_idx, self.batch_report_interval,
                     G_losses.avg, D_losses.avg)
-                start = datetime.datetime.now()
+
+                x = Variable(x)
+                if torch.cuda.is_available() and self.use_cuda:
+                    x = x.cuda()
 
                 # Update generator every 3x we update discriminator
                 D_loss = self.gan.train_D(x, self.D_optimizer, self.batch_size)
@@ -135,24 +142,25 @@ class CelebA(object):
                 D_losses.update(D_loss, self.batch_size)
                 G_losses.update(G_loss, self.batch_size)
 
-                # Pretty print
-                if batch_idx % self.batch_report_interval == 0 and batch_idx:
-                    # Save losses and accuracies
-                    #G_loss.append(G_losses.avg)
-                    #D_loss.append(D_losses.avg)
-                    print("\r{}".format(" " * 80), end="\r")
-                    end = datetime.datetime.now()
-                    elapsed = int((end - start).total_seconds() * 1000)
-                    utils.show_learning_stats(batch_idx, num_batches, G_losses.avg, D_losses.avg, elapsed)
-                    G_losses.reset()
-                    D_losses.reset()
+                batch_end = datetime.datetime.now()
+                batch_time = int((batch_end - batch_start).total_seconds() * 1000)
+                avg_time_per_batch.update(batch_time)
 
+                # Report model statistics
+                if batch_idx % self.batch_report_interval == 0 and batch_idx:
+                    G_all_losses.append(G_losses.avg)
+                    D_all_losses.append(D_losses.avg)
+                    utils.show_learning_stats(batch_idx, self.num_batches, G_losses.avg, D_losses.avg, avg_time_per_batch.avg)
+                    [k.reset() for k in [G_losses, D_losses, avg_time_per_batch]]
+
+            # Save model
+            utils.clear_line()
+            print("Elapsed time for epoch: {}".format(utils.time_elapsed_since(start_epoch)))
             self.save_model(epoch)
 
         # Print elapsed time
-        #end = datetime.datetime.now()
-        #elapsed = str(end - start)[:-7]
-        #print("Training done! Total elapsed time: {}\n".format(elapsed))
+        elapsed = utils.time_elapsed_since(start)
+        print("Training done! Total elapsed time: {}\n".format(elapsed))
 
         return G_loss, D_loss
 
@@ -167,14 +175,13 @@ if __name__ == "__main__":
         "learning_rate": 0.0002,
         "momentum": (0.5, 0.999),
         "optim": "adam",
-        "use_cuda": True
+        "use_cuda": False
     }
 
     ckpt_params = {
         "batch_report_interval": 5,
         "stats_path": "./stats",
         "ckpts_path": "./checkpoints",
-        "epoch_ckpt_interval": 1000,
     }
 
     gan_params = {
@@ -186,10 +193,8 @@ if __name__ == "__main__":
     data_loader = utils.load_dataset(train_params["root_dir"],
         train_params["batch_size"])
 
-    #print(gan.gan.get_num_params())
-    #gan.train(5, data_loader)
-    gan.load_model("gan-epoch-100")
-    img = gan.gan.generate_img()
-    img = utils.unnormalize(img)
-    torchvision.utils.save_image(img, "./../generated/test.png")
-    #plt.imsave("./../generated/test.png", np.array(img))
+    gan.train(5, data_loader)
+    #gan.load_model("dcgan-gen-epoch-3")
+    #img = gan.gan.generate_img()
+    #img = utils.unnormalize(img)
+    #torchvision.utils.save_image(img, "./../generated/test.png")

@@ -87,11 +87,12 @@ class DCGAN(nn.Module):
         if self.loss is "og":
             self.G.zero_grad()
 
+            # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
             G_out = self.G(z)
             D_out = self.D(G_out).squeeze()
 
-            #TODO: understand why this is doing the right thing
+            # Evaluate loss and backpropagate
             G_train_loss = F.binary_cross_entropy(D_out, self.y_real)
             G_train_loss.backward()
             G_optimizer.step()
@@ -111,23 +112,17 @@ class DCGAN(nn.Module):
         if self.loss is "og":
             self.D.zero_grad()
 
-            x = Variable(x)
-            # CUDA support
-            if torch.cuda.is_available() and self.use_cuda:
-                x = x.cuda()
-
-            # Pass image through discriminator
+            # Through discriminator and evaluate loss
             D_out = self.D(x).squeeze()
             D_real_loss = F.binary_cross_entropy(D_out, self.y_real)
 
-            # Pass latent variable through GAN
+            # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
             G_out = self.G(z)
             D_out = self.D(G_out).squeeze()
             D_fake_loss = F.binary_cross_entropy(D_out, self.y_fake)
-            D_fake_score = D_out.data.mean()
 
-            # Total train loss
+            # Update discriminator
             D_train_loss = D_real_loss + D_fake_loss
             D_train_loss.backward()
             D_optimizer.step()
