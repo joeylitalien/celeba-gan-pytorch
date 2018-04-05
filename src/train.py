@@ -175,7 +175,7 @@ if __name__ == "__main__":
         "learning_rate": 0.0002,
         "momentum": (0.5, 0.999),
         "optim": "adam",
-        "use_cuda": False
+        "use_cuda": True
     }
 
     ckpt_params = {

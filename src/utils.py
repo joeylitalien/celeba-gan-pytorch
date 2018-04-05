@@ -31,27 +31,30 @@ def format_hdr(gan, root_dir, training_len):
     num_params_D, num_params_G = gan.get_num_params()
     loss = gan.loss
     if gan.loss is "og":
-        gan_type = "Deep convolutional GAN (min_G max_D)"
+        gan_type = "Deep convolutional GAN (DCGAN)"
+        gan_loss = "min_G max_D V(G,D) = E_x[log D(x)] + E_z[1 - log D(G(x))]"
     elif gan.loss is "wasserstein":
         gan_type = "Wasserstein GAN (WGAN)"
+        gan_loss = "min_G max_D V(G,D) = E_x[D(x)] - E_z[D(G(x))]"
     else:
         gan_type = "Unknown"
+        gan_loss = "Unkown"
     title = "Generative Adversarial Network (GAN)".center(80)
     sep, sep_ = 80 * "-", 80 * "="
     type_str = "Type: {}".format(gan_type)
-    param_D_str = "Nb of generator params: {:d}".format(num_params_D)
-    param_G_str = "Nb of discriminator params: {:d}".format(num_params_G)
-    dataset = "CelebA dataset ({}) containing {:d} faces".format(root_dir, training_len)
-    hdr = "\n".join([sep_, title, sep, type_str, param_D_str, param_G_str, dataset, sep_])
+    loss_str = "Loss: {}".format(gan_loss)
+    param_D_str = "Nb of generator params: {:,}".format(num_params_D)
+    param_G_str = "Nb of discriminator params: {:,}".format(num_params_G)
+    dataset = "Training on CelebA dataset ({}) with {:,} faces".format(root_dir, training_len)
+    hdr = "\n".join([sep_, title, sep, dataset, type_str, loss_str, param_D_str, param_G_str, sep_])
     print(hdr)
 
 
 def time_elapsed_since(start):
-    """Compute elapsed time"""
+    """Compute elapsed time since start"""
 
     end = datetime.datetime.now()
-    elapsed = str(end - start)[:-7]
-    return elapsed
+    return str(end - start)[:-7]
 
 
 def progress_bar(batch_idx, report_interval, G_loss, D_loss):
@@ -91,20 +94,8 @@ def compute_mean_std(data_loader):
 def load_dataset(root_dir, batch_size):
     """Load data from image folder"""
 
-    #if redux: # Redux dataset (10k examples)
-    #    mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
-    #else: # Full dataset (~202k examples), to be computed
-    #    mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
-    #normalize = transforms.Normalize(mean=mean, std=std)
-
-    #if normalize:
-    #    train_data = ImageFolder(root=root_dir,
-    #        transform=transforms.Compose([transforms.ToTensor(), normalize]))
-    #else:
-    #    train_data = ImageFolder(root=root_dir, transform=transforms.ToTensor())
-
-    #normalize = transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-    mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
+    # mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
+    mean, std = [0.5] * 3, [0.5] * 3
     normalize = transforms.Normalize(mean=mean, std=std)
     train_data = ImageFolder(root=root_dir,
        transform=transforms.Compose([transforms.ToTensor(), normalize]))
@@ -112,10 +103,11 @@ def load_dataset(root_dir, batch_size):
     return data_loader
 
 
-def unnormalize(img, mean=[0.5066, 0.4261, 0.3836],
-    std=[0.2589, 0.2380, 0.2340]):
+def unnormalize(img, mean, std):
     """Unnormalize image"""
 
+    # mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
+    mean, std = [0.5] * 3, [0.5] * 3
     return img.cpu().data * torch.Tensor(std).view(-1, 1, 1) + \
         torch.Tensor(mean).view(-1, 1, 1)
 
