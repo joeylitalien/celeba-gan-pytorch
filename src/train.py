@@ -19,6 +19,7 @@ from dcgan import DCGAN, Generator, Discriminator
 import torchvision.utils
 
 import numpy as np
+import pickle
 import os, sys
 import datetime
 import matplotlib
@@ -45,6 +46,7 @@ class CelebA(object):
         self.batch_report_interval = ckpt_params["batch_report_interval"]
         self.stats_path = ckpt_params["stats_path"]
         self.ckpts_path = ckpt_params["ckpts_path"]
+        self.save_stats_interval = ckpt_params["save_stats_interval"]
 
         # Create directories if they don't exist
         if not os.path.isdir(self.stats_path):
@@ -60,8 +62,8 @@ class CelebA(object):
 
         # Make sure report interval divides total num of batches
         self.num_batches = self.train_len // self.batch_size
-        assert self.num_batches % self.batch_report_interval == 0, \
-            "Batch report interval must divide total number of batches per epoch"
+        #assert self.num_batches % self.batch_report_interval == 0, \
+        #    "Batch report interval must divide total number of batches per epoch"
 
         # Get ready to ruuummmmmmble
         self.compile()
@@ -91,14 +93,30 @@ class CelebA(object):
             self.gan = self.gan.cuda()
 
 
-    def save_model(self, epoch):
-        """Save model (generator only, for now)"""
+    def save_model(self, epoch, override=True):
+        """Save model"""
 
-        filename_pt = "{}/dcgan-gen-epoch-{}".format(self.ckpts_path, epoch + 1)
-        filename_pt += ".pt"
-        torch.save(self.gan.G.state_dict(), filename_pt)
-        sep = "\n" + 80 * "-" + "\n"
-        print("Saving generator checkpoint to: {}{}".format(filename_pt, sep))
+        if override:
+            fname_gen_pt = "{}/dcgan-gen.pt".format(self.ckpts_path)
+            fname_disc_pt = "{}/dcgan-disc.pt".format(self.ckpts_path)
+        else:
+            fname_gen_pt = "{}/dcgan-gen-epoch-{}.pt".format(self.ckpts_path, epoch + 1)
+            fname_disc_pt = "{}/dcgan-disc-epoch-{}.pt".format(self.ckpts_path, epoch + 1)
+
+        print("Saving generator checkpoint to: {}".format(fname_gen_pt))
+        torch.save(self.gan.G.state_dict(), fname_gen_pt)
+        sep = "\n" + 80 * "-"
+        print("Saving discriminator checkpoint to: {}{}".format(fname_disc_pt, sep))
+        torch.save(self.gan.D.state_dict(), fname_disc_pt)
+
+
+    def save_stats(self, stats):
+        """Save model statistics"""
+
+        fname_pkl = "{}/dcgan-stats.pkl".format(self.stats_path)
+        print("Saving model statistics to: {}".format(fname_pkl))
+        with open(fname_pkl, "wb") as fp:
+            pickle.dump(stats, fp)
 
 
     def load_model(self, filename):
@@ -126,6 +144,8 @@ class CelebA(object):
             avg_time_per_batch = utils.AvgMeter()
             # Mini-batch SGD
             for batch_idx, (x, _) in enumerate(data_loader):
+                if x.shape[0] != self.batch_size:
+                    break
                 batch_start = datetime.datetime.now()
                 # Print progress bar
                 utils.progress_bar(batch_idx, self.batch_report_interval,
@@ -153,6 +173,11 @@ class CelebA(object):
                     utils.show_learning_stats(batch_idx, self.num_batches, G_losses.avg, D_losses.avg, avg_time_per_batch.avg)
                     [k.reset() for k in [G_losses, D_losses, avg_time_per_batch]]
 
+                # Save stats
+                if batch_idx % self.save_stats_interval == 0 and batch_idx:
+                    stats = dict(G_loss=G_all_losses, D_loss=D_all_losses)
+                    self.save_stats(stats)
+
             # Save model
             utils.clear_line()
             print("Elapsed time for epoch: {}".format(utils.time_elapsed_since(start_epoch)))
@@ -168,10 +193,10 @@ class CelebA(object):
 if __name__ == "__main__":
 
     train_params = {
-        "root_dir": "./../data/celebA_redux",
+        "root_dir": "./../data/celebA_all",
         "gen_dir": "./../generated",
         "batch_size": 128,
-        "train_len": 12800,
+        "train_len": 202599,
         "learning_rate": 0.0002,
         "momentum": (0.5, 0.999),
         "optim": "adam",
@@ -179,9 +204,10 @@ if __name__ == "__main__":
     }
 
     ckpt_params = {
-        "batch_report_interval": 5,
+        "batch_report_interval": 100,
         "stats_path": "./stats",
-        "ckpts_path": "./checkpoints",
+        "ckpts_path": "./checkpoints/all",
+        "save_stats_interval": 500
     }
 
     gan_params = {
@@ -193,8 +219,10 @@ if __name__ == "__main__":
     data_loader = utils.load_dataset(train_params["root_dir"],
         train_params["batch_size"])
 
-    gan.train(5, data_loader)
-    #gan.load_model("dcgan-gen-epoch-3")
-    #img = gan.gan.generate_img()
-    #img = utils.unnormalize(img)
-    #torchvision.utils.save_image(img, "./../generated/test.png")
+    #gan.train(20, data_loader)
+    gan.load_model("dcgan-gen")
+    for i in range(100):
+        img = gan.gan.generate_img()
+        img = utils.unnormalize(img)
+        fname = "./../generated/test{:d}.png".format(i)
+        torchvision.utils.save_image(img, fname)

@@ -32,10 +32,10 @@ def format_hdr(gan, root_dir, training_len):
     loss = gan.loss
     if gan.loss is "og":
         gan_type = "Deep convolutional GAN (DCGAN)"
-        gan_loss = "min_G max_D V(G,D) = E_x[log D(x)] + E_z[1 - log D(G(x))]"
+        gan_loss = "min_G max_D  E_x[log D(x)] + E_z[1 - log D(G(x))]"
     elif gan.loss is "wasserstein":
         gan_type = "Wasserstein GAN (WGAN)"
-        gan_loss = "min_G max_D V(G,D) = E_x[D(x)] - E_z[D(G(x))]"
+        gan_loss = "min_G max_D  E_x[D(x)] - E_z[D(G(x))]"
     else:
         gan_type = "Unknown"
         gan_loss = "Unkown"
@@ -60,10 +60,10 @@ def time_elapsed_since(start):
 def progress_bar(batch_idx, report_interval, G_loss, D_loss):
     """Neat progress bar to track training"""
 
-    bar_size = 23
+    bar_size = 24
     progress = (((batch_idx - 1) % report_interval) + 1) / report_interval
     fill = int(progress * bar_size)
-    print("\rBatch {:>2d} [{}{}] G loss: {:>7.4f} | D loss: {:>7.4f}".format(batch_idx, "=" * fill, " " * (bar_size - fill), G_loss, D_loss), end="")
+    print("\rBatch {:>4d} [{}{}] G loss: {:>7.4f} | D loss: {:>7.4f}".format(batch_idx, "=" * fill, " " * (bar_size - fill), G_loss, D_loss), end="")
 
 
 def show_learning_stats(batch_idx, num_batches, g_loss, d_loss, elapsed):
@@ -71,7 +71,7 @@ def show_learning_stats(batch_idx, num_batches, g_loss, d_loss, elapsed):
 
     clear_line()
     dec = str(int(np.ceil(np.log10(num_batches))))
-    print("Batch {:>{dec}d} / {:d} | G loss: {:>7.4f} | D loss: {:>7.4f} | Avg time per batch: {:d} ms".format(batch_idx, num_batches, g_loss, d_loss, int(elapsed), dec=dec))
+    print("Batch {:>{dec}d} / {:d} | G loss: {:>7.4f} | D loss: {:>7.4f} | Avg time / batch: {:d} ms".format(batch_idx, num_batches, g_loss, d_loss, int(elapsed), dec=dec))
 
 
 def compute_mean_std(data_loader):
@@ -103,7 +103,7 @@ def load_dataset(root_dir, batch_size):
     return data_loader
 
 
-def unnormalize(img, mean, std):
+def unnormalize(img):
     """Unnormalize image"""
 
     # mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]

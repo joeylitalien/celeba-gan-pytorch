@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.misc import imresize
 
 # root path depends on your computer
-root = 'data/celebA/'
-save_root = 'data/resized_celebA/'
+root = "data/celebA_original/train/"
+save_root = "data/celebA_all/train/"
 resize_size = 64
 
 if not os.path.isdir(save_root):
@@ -22,4 +22,4 @@ for i in range(len(img_list)):
     plt.imsave(fname=fname, arr=img, format="png")
 
     if (i % 1000) == 0:
-        print('%d images complete' % i)
+        print("%d images complete" % i)

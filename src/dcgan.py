@@ -147,23 +147,23 @@ class Generator(nn.Module):
     """DCGAN Generator G(z)"""
     #TODO: Use torch.nn.Upsample
 
-    def __init__(self, latent_dim=100, batch_size=128):
+    def __init__(self, latent_dim=100):
         super(Generator, self).__init__()
         self.features = nn.Sequential(
-            nn.ConvTranspose2d(latent_dim, batch_size * 8,
+            nn.ConvTranspose2d(latent_dim, 1024,
                 kernel_size=4, stride=1, padding=0),
-            nn.BatchNorm2d(batch_size * 8),
+            nn.BatchNorm2d(1024),
             nn.ReLU(),
-            nn.ConvTranspose2d(batch_size * 8, batch_size * 4, 4, 2, 1),
-            nn.BatchNorm2d(batch_size * 4),
+            nn.ConvTranspose2d(1024, 512, 4, 2, 1),
+            nn.BatchNorm2d(512),
             nn.ReLU(),
-            nn.ConvTranspose2d(batch_size * 4, batch_size * 2, 4, 2, 1),
-            nn.BatchNorm2d(batch_size * 2),
+            nn.ConvTranspose2d(512, 256, 4, 2, 1),
+            nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.ConvTranspose2d(batch_size * 2, batch_size , 4, 2, 1),
-            nn.BatchNorm2d(batch_size),
+            nn.ConvTranspose2d(256, 128, 4, 2, 1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.ConvTranspose2d(batch_size, 3, 4, 2, 1),
+            nn.ConvTranspose2d(128, 3, 4, 2, 1),
             nn.Tanh())
 
     def forward(self, x):
@@ -173,22 +173,21 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     """DCGAN Discriminator D(z)"""
 
-    def __init__(self, batch_size=128):
+    def __init__(self):
         super(Discriminator, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(3, batch_size, 4, 2, 1),
+            nn.Conv2d(3, 128, 4, 2, 1),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(batch_size, batch_size * 2,
-                kernel_size=4, stride=2, padding=1),
-            nn.BatchNorm2d(batch_size * 2),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
+            nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(batch_size * 2, batch_size * 4, 4, 2, 1),
-            nn.BatchNorm2d(batch_size * 4),
+            nn.Conv2d(256, 512, 4, 2, 1),
+            nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(batch_size * 4, batch_size * 8, 4, 2, 1),
-            nn.BatchNorm2d(batch_size * 8),
+            nn.Conv2d(512, 1024, 4, 2, 1),
+            nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(batch_size * 8, 1, 4, 1, 0),
+            nn.Conv2d(1024, 1, 4, 1, 0),
             nn.Sigmoid())
 
     def forward(self, x):
