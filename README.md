@@ -6,3 +6,7 @@ Tested on Python 2.7.x / 3.6.x.
 * [PyTorch](http://pytorch.org/) (0.3.0)
 * [NumPy](http://www.numpy.org/) (1.13.3)
 * [Pickle](https://docs.python.org/3/library/pickle.html) (0.7.4)
+
+
+### Small dataset
+Available [here](https://drive.google.com/open?id=1p6WtrxprsjsiedQJkKVoiqvdrP1m9BuF).
