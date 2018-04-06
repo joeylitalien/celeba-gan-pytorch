@@ -136,11 +136,21 @@ class DCGAN(nn.Module):
         return D_loss
 
 
-    def generate_img(self):
+    def generate_img(self, z=None):
         """Sample random image from GAN"""
-
-        z = self.create_latent_var(1)
+        if z is None:
+            z = self.create_latent_var(1)
         return self.G(z).squeeze()
+
+    def interpolate(self, z0, z1):
+
+        imgs = []
+        for i in range(0,11):
+            alpha = i/10
+            z = (1-alpha)*z0 + alpha*z1
+            imgs.append(self.generate_img(z))
+        return imgs
+
 
 
 class Generator(nn.Module):

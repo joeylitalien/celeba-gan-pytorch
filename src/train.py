@@ -205,8 +205,8 @@ if __name__ == "__main__":
 
     ckpt_params = {
         "batch_report_interval": 100,
-        "stats_path": "./stats",
-        "ckpts_path": "./checkpoints/all",
+        "stats_path": "./stats/all",
+        "ckpts_path": "./checkpoints/all_100",
         "save_stats_interval": 500
     }
 
@@ -219,10 +219,20 @@ if __name__ == "__main__":
     data_loader = utils.load_dataset(train_params["root_dir"],
         train_params["batch_size"])
 
-    #gan.train(20, data_loader)
+    #gan.train(50, data_loader)
     gan.load_model("dcgan-gen")
-    for i in range(100):
-        img = gan.gan.generate_img()
+    torch.manual_seed(0)
+    z0 = gan.gan.create_latent_var(1)
+    torch.manual_seed(11)
+    z1 = gan.gan.create_latent_var(1)
+    imgs = gan.gan.interpolate(z0,z1)
+    for i, img in enumerate(imgs):
         img = utils.unnormalize(img)
-        fname = "./../generated/test{:d}.png".format(i)
+        fname = "../interpolated/test{:.1f}.png".format(i/10)
         torchvision.utils.save_image(img, fname)
+
+    # for i in range(50):
+    #     img = gan.gan.generate_img()
+    #     img = utils.unnormalize(img)
+    #     fname = "../generated/test{:d}.png".format(i)
+    #     torchvision.utils.save_image(img, fname)
