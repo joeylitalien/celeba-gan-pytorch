@@ -1,0 +1,9 @@
+\BOOKMARK [1][-]{section.1}{Overview}{}% 1
+\BOOKMARK [1][-]{section.2}{Architecture}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{DCGAN}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Increasing the Feature Map Size}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{Qualitative Evaluations}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{DCGAN vs. WGAN Visual Comparison}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{Latent Space Exploration}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.3}{Latent Space and Screen Space Interpolation}{section.3}% 8
+\BOOKMARK [1][-]{section.4}{Quantitative Evaluations}{}% 9

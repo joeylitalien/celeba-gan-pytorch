@@ -1,0 +1,147 @@
+\documentclass[table]{article}
+\usepackage[rgb,dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage{iclr2017_conference,times}
+\usepackage{amsmath, amsthm}
+\usepackage[subscriptcorrection,mtpcal,amsbb]{mtpro2}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{enumitem}
+\setlist{leftmargin=15pt}
+\usepackage{inconsolata}
+\usepackage{textcomp}
+\usepackage{lastpage}
+\cfoot{\thepage\ of \pageref{LastPage}}
+\usepackage{makecell}
+\usepackage{physics}
+\usetikzlibrary{arrows,positioning,automata}
+\usetikzlibrary{shapes.geometric}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\usepackage{colortbl}
+\usepackage{hhline}
+\usepackage[labelfont=bf,labelsep=period]{caption}
+
+\newcommand{\thickhline}{%
+    \noalign {\ifnum 0=`}\fi \hrule height 1pt
+    \futurelet \reserved@a \@xhline
+}
+
+\lhead{\textsc{IFT6135 Representation Learning}}
+\rhead{S. Laferri\`ere \& J. Litalien}
+
+\title{Assignment 4 --- Theoretical Part \\
+Generative Models}
+\author{Joey Litalien\thanks{Student ID P1195712} \\
+IFT6135 Representation Learning, Winter 2018\\
+Universit\'e de Montr\'eal\\
+Prof. Aaron Courville \\
+\texttt{joey.litalien@umontreal.ca}}
+
+\def\*#1{\mathbf{#1}}
+\DeclareMathOperator{\ex}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+
+\newcommand{\given}{\,|\,}
+\newcommand{\code}[1]{\texttt{\bfseries #1}}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+\section{Reparameterization Trick of Variational Autoencoder}
+
+\begin{enumerate}[label=(\alph*)]
+  \item \begin{proof}
+     This is rather straightforward. The linearly transformed standard Gaussian noise is given by
+     \begin{align}
+       \*z = \mu(\*x) + \sigma(\*x)\odot \mathbold{\epsilon}, \qquad \mathbold{\epsilon} \sim \mathcal{N}(0, \*I). \label{noise}
+     \end{align}
+     Clearly, 
+     \begin{align*}
+       \ex[\*z] &= \ex[ \mu(\*x) + \sigma(\*x)\odot \mathbold{\epsilon}] = \ex[\mu(\*x)] + \ex[\sigma(\*x)\odot \mathbold{\epsilon}] \\ &= \mu(\*x)
+      \end{align*}
+      and similarly,
+      \begin{align*}
+        \sigma^2[\*z] &= \ex\big[(\*z - \mu(\*x))^2\big] = \ex\left[\big(\mu(\*x) + \sigma(\*x)\odot\mathbold{\epsilon} - \mu(\*x)\big)^2\right] \\
+                &= \ex\big[(\sigma(\*x)\odot \mathbold{\epsilon})^2\big] \\
+                &= \sigma^2(\*x).
+      \end{align*}
+      Hence, \eqref{noise} has the same mean and variance as $\mathcal{N}(\mu(\*x), \sigma^2(\*x))$, as desired.
+    \end{proof}
+
+    \fbox{Do not forget 2nd part}
+	\item
+\end{enumerate}
+
+
+
+\section{Importance Weighted Autoencoder}
+\begin{enumerate}[label=(\alph*)]
+  \item \begin{proof}
+      We show that IWLB is a lower bound on the log likelihood $\log p(\*x)$. To simplify notation, let $\*w_i = p(\*x, 
+      \*z_i) / q(\*z_i\given \*x)$ denote the unnormalized importance weights for the joint distribution. Using Jensen's inequality and the fact that the average importance weights are an unbiased estimator of $p(\*x)$, we have that
+      \begin{align*}
+        \mathcal{L}_k &= \ex \left[\log \frac{1}{k} \sum_{i=1}^k \*w_i \right]
+                     \leq \log \ex \left[ \frac{1}{k} \sum_{i=1}^k \*w_i \right]
+                     = \log p(\*x),
+      \end{align*}
+      where the expectations are taken with respect to $q(\*z \given \*x)$.
+    \end{proof}
+  \item \begin{proof} We want to show that $\mathrm{ELBO} = \mathcal{L}_1 \leq \mathcal{L}_2 \leq \log p(\*x)$. Using the fact that $\ex_i[\*w_i] = \tfrac{1}{2}(\*w_1 + \*w_2)$, we have that
+      \begin{align*}
+        \mathcal{L}_2 &= \ex_{\*z_1,\*z_2} \left[\log \frac{1}{2} \PARENS{\frac{p(\*x,\*z_1)}{q(\*z_1\given \*x)} +  \frac{p(\*x,\*z_2)}{q(\*z_2\given \*x)}} \right] \\
+                      &=\ex_{\*z_1,\*z_2} \left[\log \ex_i \left[\frac{p(\*x,\*z_i)}{q(\*z_i\given \*x)}\right] \right] \\
+                      &\geq \ex_{\*z_1,\*z_2}\left[ \ex_i \left[ \log \frac{p(\*x,\*z_i)}{q(\*z_i\given \*x)}\right] \right] \\
+                      &=  \ex_{\*z} \left[ \log \frac{p(\*x,\*z)}{q(\*z\given \*x)}\right] \\
+                      &= \mathcal{L}_1,
+      \end{align*}
+      where we used Jensen's inequality on the third line. Using the same heuristic, one can actually show that $\mathcal{L}_k \geq \mathcal{L}_m$ for any $k \geq m$.
+
+    \end{proof}
+\end{enumerate}
+
+\section{Maximum Likelihood for Generative Adversarial Networks}
+
+\begin{proof}
+We wish to derive the maximum likelihood learning rule for GANs. In particular, we have an objective function for the generator network $G$ given by
+\begin{align}
+  J^{(G)} = \ex_{\*x \sim p_{\textsf{gen}}} f(\*x), \label{cost}
+\end{align}
+and we want to find a function $f$ such that \eqref{cost} yields maximum likelihood. We start by showing that
+\begin{align}
+  \pdv{\mathbold{\theta}} J^{(G)} = \ex_{\*x \sim p_{\textsf{gen}}} f(\*x) \pdv{\mathbold{\theta}} \log p_{\textsf{gen}}(\*x).\label{der}  
+\end{align}
+To do so, we write the expectation as an integral and use Leibniz rule to obtain
+\begin{align}
+  \pdv{\mathbold{\theta}} J^{(G)} &=  \pdv{\mathbold{\theta}} \int f(\*x)p_{\textsf{gen}}(\*x) \dd{\*x} 
+  = \int f(\*x) \pdv{\mathbold{\theta}} p_{\textsf{gen}}(\*x) \dd{\*x}. \label{leibniz}
+\end{align}
+Assuming that $p_\textsf{gen} > 0$ everywhere, we can use the identity $g' = g(\log g)'$ for $g>0$ to rewrite the right-hand side of \eqref{leibniz} as
+\begin{align}
+  \pdv{\mathbold{\theta}} J^{(G)}& = \int f(\*x)p_{\textsf{gen}}(\*x)  \pdv{\mathbold{\theta}} \log p_{\textsf{gen}}(\*x) \dd{\*x},
+\end{align}
+which is just \eqref{der}. This gives us an expression where we can relate the gradients of the likelihood with the samples generated by $G$. However, we would like to have these gradients in terms of samples that came from the real data distribution $p_\textsf{data}$. To fix this, we can perform a simple importance sample trick by setting
+\begin{align*}
+  f(\*x) = -\frac{p_\textsf{data}(\*x)}{p_\textsf{gen}(\*x)}
+\end{align*}
+to reweight our sampling. Using our assumption that the discriminator $D$ is optimal with 
+\begin{align*}
+  D^*(\*x) = \frac{p_\textsf{data}(\*x)}{p_\textsf{data}(\*x) + p_\textsf{gen}(\*x)},
+\end{align*}
+which we can write as $D^*(\*x) = \sigma(a(\*x))$ for some network output $a(\*x)$ (and $\sigma$ is the logistic sigmoid function), we can solve for $f$ directly:
+\begin{align*}
+  \sigma(a(\*x)) &= \frac{1}{1+\exp(-a(\*x))} =  \frac{p_\textsf{data}(\*x)}{p_\textsf{data}(\*x) + p_\textsf{gen}(\*x)} = \frac{1}{1+p_\textsf{gen}(\*x)/p_\textsf{data}(\*x)} \\
+                 &= \frac{1}{1-f^{-1}}.
+\end{align*}
+Therefore, $f(\*x) = -\exp(a(\*x))$. We conclude that the objective function maximizing likelihood must be given by
+\begin{align*}
+  J^{(G)} = \frac{1}{2}\ex_{\*z} \exp(\sigma^{-1}(D(G(\*z)))) = \frac{1}{2}\ex_{\*z} \left[\frac{D(G(\*z))}{1 - D(G(\*z))} \right].
+\end{align*}
+\end{proof}
+
+\end{document}

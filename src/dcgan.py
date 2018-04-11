@@ -142,14 +142,28 @@ class DCGAN(nn.Module):
             z = self.create_latent_var(1)
         return self.G(z).squeeze()
 
-    def interpolate(self, z0, z1):
+
+    def latent_lerp(self, z0, z1, nb_frames):
+        """Interpolate between two images in latent space"""
 
         imgs = []
-        for i in range(0,11):
-            alpha = i/10
-            z = (1-alpha)*z0 + alpha*z1
+        for i in range(nb_frames):
+            alpha = i / nb_frames
+            z = (1 - alpha) * z0 + alpha * z1
             imgs.append(self.generate_img(z))
         return imgs
+
+
+    def screen_lerp(self, x0, x1, nb_frames):
+        """Interpolate between two images in latent space"""
+
+        imgs = []
+        for i in range(nb_frames):
+            alpha = i / nb_frames
+            x = (1 - alpha) * x0 + alpha * x1
+            imgs.append(x)
+        return imgs
+
 
 
 

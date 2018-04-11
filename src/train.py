@@ -26,6 +26,7 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import utils
+import argparse
 
 
 class CelebA(object):
@@ -119,12 +120,15 @@ class CelebA(object):
             pickle.dump(stats, fp)
 
 
-    def load_model(self, filename):
+    def load_model(self, filename, cpu=False):
         """Load PyTorch model"""
 
         ckpt_filename = self.ckpts_path + "/" + filename + ".pt"
         print("Loading generator checkpoint from: {}".format(ckpt_filename))
-        self.gan.G.load_state_dict(torch.load(ckpt_filename))
+        if cpu:
+            self.gan.G.load_state_dict(torch.load(ckpt_filename, map_location="cpu"))
+        else:
+            self.gan.G.load_state_dict(torch.load(ckpt_filename))
 
 
     def train(self, nb_epochs, data_loader):
@@ -215,21 +219,84 @@ if __name__ == "__main__":
         "latent_dim": 100
     }
 
+    parser = argparse.ArgumentParser(description="Generative adversarial network")
+    parser.add_argument("--latent-lerp", help="interpolate in latent space",
+        action="store_true")
+    parser.add_argument("--screen-lerp", help="interpolate in screen space",
+        action="store_true")
+    parser.add_argument("--latent-play", help="play in latent space",
+        action="store_true")
+
+    args = parser.parse_args()
+
     gan = CelebA(train_params, ckpt_params, gan_params)
     data_loader = utils.load_dataset(train_params["root_dir"],
         train_params["batch_size"])
 
-    #gan.train(50, data_loader)
-    gan.load_model("dcgan-gen")
-    torch.manual_seed(0)
-    z0 = gan.gan.create_latent_var(1)
-    torch.manual_seed(11)
-    z1 = gan.gan.create_latent_var(1)
-    imgs = gan.gan.interpolate(z0,z1)
-    for i, img in enumerate(imgs):
+    """
+    gan.load_model("dcgan-gen", cpu=True)
+    for i in range(100):
+        torch.manual_seed(600+i)
+        z = gan.gan.create_latent_var(1)
+        img = gan.gan.generate_img(z)
         img = utils.unnormalize(img)
-        fname = "../interpolated/test{:.1f}.png".format(i/10)
-        torchvision.utils.save_image(img, fname)
+        fname_in = "../interpolated/test{:d}.png".format(i)
+        torchvision.utils.save_image(img, fname_in)
+    #gan.train(50, data_loader)
+    """
+    # Woman seeds: 442, 491, 625
+    # Man seed: 268, 296, 573
+
+    if args.latent_lerp:
+        gan.load_model("dcgan-gen", cpu=True)
+        torch.manual_seed(573)
+        z0 = gan.gan.create_latent_var(1)
+        torch.manual_seed(625)
+        z1 = gan.gan.create_latent_var(1)
+        nb_frames = 50
+        imgs = gan.gan.latent_lerp(z0, z1, nb_frames)
+        for i, img in enumerate(imgs):
+            img = utils.unnormalize(img)
+            fname_in = "../interpolated/test{:d}.png".format(i+1)
+            fname_out = "../interpolated/test{:d}.png".format(2*nb_frames - i)
+            torchvision.utils.save_image(img, fname_in)
+            torchvision.utils.save_image(img, fname_out)
+
+    elif args.screen_lerp:
+        gan.load_model("dcgan-gen", cpu=True)
+        torch.manual_seed(573)
+        z0 = gan.gan.create_latent_var(1)
+        x0 = gan.gan.generate_img(z0)
+        torch.manual_seed(625)
+        z1 = gan.gan.create_latent_var(1)
+        x1 = gan.gan.generate_img(z1)
+        nb_frames = 50
+        imgs = gan.gan.screen_lerp(x0, x1, nb_frames)
+        for i, img in enumerate(imgs):
+            img = utils.unnormalize(img)
+            fname_in = "../interpolated/test{:d}.png".format(i+1)
+            fname_out = "../interpolated/test{:d}.png".format(2*nb_frames - i)
+            torchvision.utils.save_image(img, fname_in)
+            torchvision.utils.save_image(img, fname_out)
+
+    elif args.latent_play:
+        gan.load_model("dcgan-gen", cpu=True)
+        torch.manual_seed(442)
+        z0 = gan.gan.create_latent_var(1)
+        img = gan.gan.generate_img(z0)
+        fname_in = "../play/dim_og.png"
+        img = utils.unnormalize(img)
+        torchvision.utils.save_image(img, fname_in)
+        for i in range(100):
+            z1 = z0.clone()
+            z = z1[0, i, :, :].data[0][0] 
+            z1[0, i, :, :] = -np.sign(z) * 3
+            print("i={:2d}, z={:2.4f}".format(i, z))
+            img = gan.gan.generate_img(z1)
+            img = utils.unnormalize(img)
+            fname_in = "../play/dim{:d}.png".format(i)
+            torchvision.utils.save_image(img, fname_in)
+            #torchvision.utils.save_image(img, fname_out)
 
     # for i in range(50):
     #     img = gan.gan.generate_img()
