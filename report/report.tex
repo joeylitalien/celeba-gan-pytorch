@@ -56,7 +56,7 @@ Prof. Aaron Courville \\
 
 For this assignment, we chose to implement a Generative Adversarial Network (GAN) in PyTorch. The variant we used for comparison is a Wasserstein GAN (WGAN). The class \code{DCGAN} implements a Deep Convolutional GAN and contains both a \code{Discriminator} $D$ and \code{Generator} $G$. Both entities can be trained independently using the methods \code{DCGAN.train\_*}, meaning that we can customize the order in which we train the models. These training routines implement two types of loss functions: the original minmax loss from Goodfellow (2014), and the Wasserstein version from Arjovsky (2017). Every hyperparameters related to training like $D$'s and $G$'s optimizers are set in \code{CelebA}, a wrapper class for the generative task at hand.
 
-To load a pre-trained model, simply instantiate \code{CelebA} with the default parameters, load the model weights and call \code{DCGAN.generate\_img()}. If no arguments is passed, the GAN will sample a random latent variable $z$ and return a generated image. This function also accepts a latent variable generated from a fixed RNG seed.
+To load a pre-trained model, simply instantiate \code{CelebA} with the default parameters, load the model weights and call \code{DCGAN.generate\_img()}. If no arguments is passed, the GAN will sample a random latent variable $\*z$ and return a generated image. This function also accepts a latent variable generated from a fixed RNG seed.
 
 \section{Architecture}
 \subsection{DCGAN}
@@ -76,7 +76,7 @@ In & Out & Module & Normalization & Activation & $k$ & $s$ & $p$ \\
 28 & 3 &Deconv2D & --- & Tanh & $4 \times 4$ & 2 & 1 \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{DCGAN Generator Architecture.}
+\caption{DCGAN Generator architecture.}
 \end{table}
 
 \begin{table}[ht]
@@ -92,7 +92,7 @@ In & Out & Module & Normalization & Activation & $k$ & $s$ & $p$ \\
 1024 & 1 & Conv2D & BatchNorm2D & Sigmoid & $4 \times 4$ & 1 & 0 \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{DCGAN Discriminator Architecture.}
+\caption{DCGAN Discriminator architecture.}
 \end{table}
 
 As suggested in the paper, we did not apply batchnorm to $G$'s output layer and $D$'s input layer to avoid sample oscillation and model instability.
@@ -116,7 +116,7 @@ Training size & $N$ & 202,599\\
 Batch size & $b$ & 128 \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{DCGAN Choice of Hyperparameters.}
+\caption{DCGAN Choice of hyperparameters.}
 \end{table}
 
 \subsection{Increasing the Feature Map Size}
@@ -131,11 +131,11 @@ To explore the face manifold in latent space, we iterated over all $10^2$ dimens
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{imgs/latent_explore}
-  \caption{DCGAN: Changing a single dimension in latent space. Original face is the left-most image.}
+  \caption{DCGAN: Changing a single dimension in latent space. Original face $\*x = G(\*z)$ is the left-most image.}
 \end{figure}
 
 \subsection{Screen and Latent Space Interpolation}
-Interpolating in screen space (Figure \ref{screen_lerp}) obviously gave very poor results as we simply interpolate between pixels and completely disregard the underlying structure of the generator $G$. Only the first and last images look like actual human faces; anything in the middle is just a blend of RGB channels that cannot resemble a face.
+Interpolating in screen space (Figure \ref{screen_lerp}) obviously gave very poor results as we simply interpolate between pixels and completely disregard the underlying structure of the generator $G$. Only the first and last images look like actual human faces; anything in the middle has ghosting artifacts since it is just a blend of RGB channels.
 
 \begin{figure}[ht]
   \centering
@@ -145,6 +145,8 @@ Interpolating in screen space (Figure \ref{screen_lerp}) obviously gave very poo
 \end{figure}
 
 Interpolating in latent space (Figure \ref{latent_lerp}), however, gives pleasant results. Indeed, any $\*z'$ seems to yield a plausible celebrity face. This is because when we interpolate the latent variables, we ``walk" on the face manifold of $G$ and so any value should somewhat give a realistic face.
+
+To better visualize the interpolation process, we created looping GIFs (and MP4 videos to avoid compression artifacts) over 50 frames (\textit{i.e.} $\alpha = i/50$). These are located in the \code{explore/screen\_space} and \code{explore/latent\_space} directories of the project source.
 
 
 \begin{figure}[ht]
