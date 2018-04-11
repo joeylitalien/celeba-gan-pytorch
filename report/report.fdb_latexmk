@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1523416669 "report.tex" "report.pdf" "report" 1523416670
+["pdflatex"] 1523416917 "report.tex" "report.pdf" "report" 1523416918
   "/usr/local/texlive/2017/texmf-dist/fonts/enc/dvips/base/8r.enc" 1480098666 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2017/texmf-dist/fonts/enc/dvips/inconsolata/i4-ot1-0.enc" 1480098667 2315 334715164332d078f211e6ad023c662e ""
   "/usr/local/texlive/2017/texmf-dist/fonts/map/fontname/texfonts.map" 1480098670 3287 e6b82fe08f5336d4d5ebc73fb1152e87 ""
@@ -188,9 +188,9 @@
   "imgs/gan_latent_lerp.png" 1523410231 354841 7d5b581edbb1823b737aafe801283cdd ""
   "imgs/gan_screen_lerp.png" 1523410544 346219 a8839cc847b25890789af343d54eefd1 ""
   "imgs/latent_explore.png" 1523415050 179031 74428de1747909810a46a20fd00a3cab ""
-  "report.aux" 1523416670 3089 864d03a8898d5b3d4d18cf5bd0371444 ""
-  "report.out" 1523416670 587 6b7d465be09d21f067506016e611a8a2 ""
-  "report.tex" 1523416669 7125 e44e91a386ef04f6926c8e84af0ce083 ""
+  "report.aux" 1523416918 3083 745d6fb6b23c8202668809a94c7ba971 ""
+  "report.out" 1523416918 581 8d0bed949f9ce280357a4a8f07d6d3bc ""
+  "report.tex" 1523416915 7119 f8410fd67f527c8b806a26ff2a599445 ""
   (generated)
   "report.pdf"
   "report.aux"

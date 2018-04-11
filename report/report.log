@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017) (preloaded format=pdflatex 2017.5.23)  10 APR 2018 23:17
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017) (preloaded format=pdflatex 2017.5.23)  10 APR 2018 23:21
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1919,7 +1919,7 @@ Package atveryend Info: Empty hook `AfterLastShipout' on input line 162.
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 162.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 162.
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 6B7D465BE09D21F067506016E611A8A2;587.
+(rerunfilecheck)             Checksum: 8D0BED949F9CE280357A4A8F07D6D3BC;581.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 162.
  ) 
 Here is how much of TeX's memory you used:
@@ -1931,7 +1931,7 @@ Here is how much of TeX's memory you used:
  1141 hyphenation exceptions out of 8191
  59i,17n,94p,10426b,357s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2017/texmf-dist/fonts/enc/dvips/base/8r.enc}{/usr/local/texlive/2017/texmf-dist/fonts/enc/dvips/inconsolata/i4-ot1-0.enc}</usr/local/texlive/2017/texmf-dist/fonts/type1/public/inconsolata/Inconsolata-zi4r.pfb></usr/local/texlive/texmf-local/fonts/type1/pctex/mtpro2/mt2mis.pfb></usr/local/texlive/texmf-local/fonts/type1/pctex/mtpro2/mt2mit.pfb></usr/local/texlive/texmf-local/fonts/type1/pctex/mtpro2/mt2sys.pfb></usr/local/texlive/texmf-local/fonts/type1/pctex/mtpro2/mt2syt.pfb></usr/local/texlive/2017/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2017/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2017/texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
-Output written on report.pdf (4 pages, 1282326 bytes).
+Output written on report.pdf (4 pages, 1282329 bytes).
 PDF statistics:
  117 PDF objects out of 1000 (max. 8388607)
  99 compressed objects within 1 object stream

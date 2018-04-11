@@ -1,2 +1,9 @@
 data/
 src/__pycache__/
+report/*.aux
+report/*.out
+report/*.log
+report/*.gz
+report/*.fls
+report/*.fdb_latexmk
+report/a4_litalien.*
