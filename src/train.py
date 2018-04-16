@@ -93,23 +93,6 @@ class CelebA(object):
             self.gan = self.gan.cuda()
 
 
-    def save_model(self, epoch, override=True):
-        """Save model"""
-
-        if override:
-            fname_gen_pt = '{}/{}-gen.pt'.format(self.ckpts_path, self.gan_type)
-            fname_disc_pt = '{}/{}-disc.pt'.format(self.ckpts_path, self.gan_type)
-        else:
-            fname_gen_pt = '{}/{}-gen-epoch-{}.pt'.format(self.ckpts_path, self.gan_type, epoch + 1)
-            fname_disc_pt = '{}/{}-disc-epoch-{}.pt'.format(self.ckpts_path, self.gan_type, epoch + 1)
-
-        print('Saving generator checkpoint to: {}'.format(fname_gen_pt))
-        torch.save(self.gan.G.state_dict(), fname_gen_pt)
-        sep = '\n' + 80 * '-'
-        print('Saving discriminator checkpoint to: {}{}'.format(fname_disc_pt, sep))
-        torch.save(self.gan.D.state_dict(), fname_disc_pt)
-
-
     def save_stats(self, stats):
         """Save model statistics"""
 
@@ -117,17 +100,6 @@ class CelebA(object):
         print('Saving model statistics to: {}'.format(fname_pkl))
         with open(fname_pkl, 'wb') as fp:
             pickle.dump(stats, fp)
-
-
-    def load_model(self, filename, cpu=False):
-        """Load PyTorch model"""
-
-        ckpt_filename = self.ckpts_path + '/' + filename + '.pt'
-        print('Loading generator checkpoint from: {}'.format(ckpt_filename))
-        if cpu:
-            self.gan.G.load_state_dict(torch.load(ckpt_filename, map_location='cpu'))
-        else:
-            self.gan.G.load_state_dict(torch.load(ckpt_filename))
 
 
     def train(self, nb_epochs, data_loader):
@@ -184,7 +156,7 @@ class CelebA(object):
             # Save model
             utils.clear_line()
             print('Elapsed time for epoch: {}'.format(utils.time_elapsed_since(start_epoch)))
-            self.save_model(epoch)
+            self.gan.save_model(epoch)
 
         # Print elapsed time
         elapsed = utils.time_elapsed_since(start)
@@ -195,11 +167,6 @@ class CelebA(object):
 
 if __name__ == '__main__':
 
-    # Good random seeds for GAN:
-    # Woman seeds: 442, 491, 625
-    # Man seed: 268, 296, 573
-
-
     # Argument parser
     parser = argparse.ArgumentParser(description='Generative adversarial network (GAN) implementation in PyTorch')
     parser.add_argument('-c', '--ckpt',
@@ -209,12 +176,6 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--type', help='model type (gan or wgan)')
     parser.add_argument('-r', '--redux', help='train on smaller dataset',
         action='store_true')
-    parser.add_argument('-d', '--dir', help='output directory for interpolation',
-        default='./interpolated')
-    parser.add_argument('-ll', '--latent-lerp', metavar=('SO', 'S1'),
-        help='interpolate in latent space (random seeds s0 & s1)', nargs=2, type=int)
-    parser.add_argument('-sl', '--screen-lerp', metavar=('SO', 'S1'),
-        help='interpolate in screen space (random seeds s0 & s1)', nargs=2, type=int)
     args = parser.parse_args()
 
     # GAN parameters (type and latent dimension size)
@@ -249,30 +210,6 @@ if __name__ == '__main__':
 
     if args.pretrained:
         gan.load_model('dcgan-gen', cpu=True)
-
-    # Latent and screen space interpolation
-    if bool(args.latent_lerp) != bool(args.screen_lerp):
-        if not os.path.isdir(args.dir):
-            os.mkdir(args.dir)
-        gan.load_model('dcgan-gen', cpu=True)
-        s0, s1 = args.latent_lerp if args.latent_lerp else args.screen_lerp
-        space = 'latent' if args.latent_lerp else 'screen'
-        print('Interpolating random seeds {:d} & {:d} in {} space...'.format(s0, s1, space))
-        torch.manual_seed(s0)
-        z0 = gan.gan.create_latent_var(1)
-        torch.manual_seed(s1)
-        z1 = gan.gan.create_latent_var(1)
-        if args.latent_lerp:
-            imgs = gan.gan.latent_lerp(z0, z1, nb_frames=10)
-        else:
-            x0 = gan.gan.generate_img(z0)
-            x1 = gan.gan.generate_img(z1)
-            imgs = gan.gan.screen_lerp(x0, x1, nb_frames)
-        for i, img in enumerate(imgs):
-            img = utils.unnormalize(img)
-            fname_in = '{}/test{:d}.png'.format(args.dir, i)
-            torchvision.utils.save_image(img, fname_in)
-        print("Interpolated images saved in {}".format(args.dir))
 
     """
     if args.latent_play:

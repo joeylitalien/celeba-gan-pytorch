@@ -10,3 +10,6 @@ Tested on Python 2.7.x / 3.6.x.
 
 ### Small dataset
 Available [here](https://drive.google.com/open?id=1p6WtrxprsjsiedQJkKVoiqvdrP1m9BuF).
+
+### Linear interpolation in latent/screen space
+`./lerp.py -p checkpoints/gan/dcgan-gen.pt -ll 560 580` will linearly interpolate between two random tensors generated from seeds 560 and 580. Use `./lerp.py --h` for more details how to use it.

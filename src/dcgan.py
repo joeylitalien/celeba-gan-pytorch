@@ -50,6 +50,33 @@ class DCGAN(nn.Module):
             self.y_fake = self.y_fake.cuda()
 
 
+    def load_model(self, filename, use_cuda=True):
+        """Load PyTorch model"""
+
+        print('Loading generator checkpoint from: {}'.format(filename))
+        if use_cuda:
+            self.G.load_state_dict(torch.load(filename))
+        else:
+            self.G.load_state_dict(torch.load(filename, map_location='cpu'))
+
+
+    def save_model(self, ckpts_path, epoch, override=True):
+        """Save model"""
+
+        if override:
+            fname_gen_pt = '{}/{}-gen.pt'.format(ckpts_path, self.gan_type)
+            fname_disc_pt = '{}/{}-disc.pt'.format(ckpts_path, self.gan_type)
+        else:
+            fname_gen_pt = '{}/{}-gen-epoch-{}.pt'.format(ckpts_path, self.gan_type, epoch + 1)
+            fname_disc_pt = '{}/{}-disc-epoch-{}.pt'.format(ckpts_path, self.gan_type, epoch + 1)
+
+        print('Saving generator checkpoint to: {}'.format(fname_gen_pt))
+        torch.save(self.G.state_dict(), fname_gen_pt)
+        sep = '\n' + 80 * '-'
+        print('Saving discriminator checkpoint to: {}{}'.format(fname_disc_pt, sep))
+        torch.save(self.D.state_dict(), fname_disc_pt)
+
+
     def init_weights(self, model):
         """Initialize weights and biases (according to paper)"""
 
