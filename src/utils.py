@@ -38,7 +38,7 @@ def format_hdr(gan, root_dir, training_len):
         gan_loss = "min_G max_D  E_x[D(x)] - E_z[D(G(x))]"
     else:
         gan_type = "Unknown"
-        gan_loss = "Unkown"
+        gan_loss = "Unknown"
     title = "Generative Adversarial Network (GAN)".center(80)
     sep, sep_ = 80 * "-", 80 * "="
     type_str = "Type: {}".format(gan_type)

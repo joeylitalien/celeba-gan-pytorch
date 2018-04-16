@@ -100,6 +100,22 @@ class DCGAN(nn.Module):
             #  Update generator loss
             G_loss = G_train_loss.data[0]
 
+        elif self.loss is "wasserstein":
+            self.G.zero_grad()
+
+            # Through generator, then discriminator
+            z = self.create_latent_var(self.batch_size)
+            G_out = self.G(z)
+            D_out = self.D(G_out).squeeze()
+
+            # Evaluate loss and backpropagate
+            G_train_loss = - D_out.mean()
+            G_train_loss.backward()
+            G_optimizer.step()
+
+            #  Update generator loss
+            G_loss = G_train_loss.data[0]
+
         else:
             raise NotImplementedError
 
@@ -126,6 +142,30 @@ class DCGAN(nn.Module):
             D_train_loss = D_real_loss + D_fake_loss
             D_train_loss.backward()
             D_optimizer.step()
+
+            # Update discriminator loss
+            D_loss = D_train_loss.data[0]
+
+        elif self.loss is "wasserstein":
+            self.D.zero_grad()
+
+            # Through discriminator and evaluate loss
+            D_out = self.D(x).squeeze()
+            D_real_loss = - D_out.mean()
+
+            # Through generator, then discriminator
+            z = self.create_latent_var(self.batch_size)
+            G_out = self.G(z)
+            D_out = self.D(G_out).squeeze()
+            D_fake_loss = - D_out.mean()
+
+            # Update discriminator
+            D_train_loss = D_real_loss - D_fake_loss
+            D_train_loss.backward()
+            D_optimizer.step()
+
+            # Clip Discriminator Norms
+            self.D.clip()
 
             # Update discriminator loss
             D_loss = D_train_loss.data[0]
@@ -202,3 +242,7 @@ class Discriminator(nn.Module):
 
     def forward(self, x):
         return self.features(x)
+
+    def clip(self, c=0.05):
+        for p in self.features.parameters():
+            p = p.mul(c)
