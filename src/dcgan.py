@@ -60,15 +60,15 @@ class DCGAN(nn.Module):
             self.G.load_state_dict(torch.load(filename, map_location='cpu'))
 
 
-    def save_model(self, ckpts_path, epoch, override=True):
+    def save_model(self, ckpt_path, epoch, override=True):
         """Save model"""
 
         if override:
-            fname_gen_pt = '{}/{}-gen.pt'.format(ckpts_path, self.gan_type)
-            fname_disc_pt = '{}/{}-disc.pt'.format(ckpts_path, self.gan_type)
+            fname_gen_pt = '{}/{}-gen.pt'.format(ckpt_path, self.gan_type)
+            fname_disc_pt = '{}/{}-disc.pt'.format(ckpt_path, self.gan_type)
         else:
-            fname_gen_pt = '{}/{}-gen-epoch-{}.pt'.format(ckpts_path, self.gan_type, epoch + 1)
-            fname_disc_pt = '{}/{}-disc-epoch-{}.pt'.format(ckpts_path, self.gan_type, epoch + 1)
+            fname_gen_pt = '{}/{}-gen-epoch-{}.pt'.format(ckpt_path, self.gan_type, epoch + 1)
+            fname_disc_pt = '{}/{}-disc-epoch-{}.pt'.format(ckpt_path, self.gan_type, epoch + 1)
 
         print('Saving generator checkpoint to: {}'.format(fname_gen_pt))
         torch.save(self.G.state_dict(), fname_gen_pt)
@@ -118,8 +118,8 @@ class DCGAN(nn.Module):
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
-            G_out = self.G(z)
-            D_out = self.D(G_out).squeeze()
+            fake_imgs = self.G(z)
+            D_out = self.D(fake_imgs).squeeze()
 
             # Evaluate loss and backpropagate
             G_train_loss = F.binary_cross_entropy(D_out, self.y_real)
@@ -134,11 +134,11 @@ class DCGAN(nn.Module):
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
-            G_out = self.G(z)
-            D_out = self.D(G_out).squeeze()
+            fake_imgs = self.G(z)
+            fake_logit = self.D(fake_imgs).squeeze()
 
             # Evaluate loss and backpropagate
-            G_train_loss = - D_out.mean()
+            G_train_loss = -fake_logit.mean()
             G_train_loss.backward()
             G_optimizer.step()
 
@@ -163,8 +163,8 @@ class DCGAN(nn.Module):
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
-            G_out = self.G(z)
-            D_out = self.D(G_out).squeeze()
+            fake_imgs = self.G(z)
+            D_out = self.D(fake_imgs).squeeze()
             D_fake_loss = F.binary_cross_entropy(D_out, self.y_fake)
 
             # Update discriminator
@@ -179,21 +179,19 @@ class DCGAN(nn.Module):
             self.D.zero_grad()
 
             # Through discriminator and evaluate loss
-            D_out = self.D(x).squeeze()
-            D_real_loss = - D_out.mean()
+            real_logit = self.D(x).squeeze()
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
-            G_out = self.G(z)
-            D_out = self.D(G_out).squeeze()
-            D_fake_loss = - D_out.mean()
+            fake_imgs = self.G(z)
+            fake_logit = self.D(fake_imgs).squeeze()
 
             # Update discriminator
-            D_train_loss = D_real_loss - D_fake_loss
+            D_train_loss = real_logit.mean() - fake_logit.mean()
             D_train_loss.backward()
             D_optimizer.step()
 
-            # Clip Discriminator Norms
+            # Clip weights
             self.D.clip()
 
             # Update discriminator loss
@@ -208,10 +206,13 @@ class DCGAN(nn.Module):
     def generate_img(self, z=None, seed=None):
         """Sample random image from GAN"""
 
-        if seed is None:
-            self.create_latent_var(1)
-        else:
+        # Nothing was provided, sample
+        if z is None and seed is None:
+            z = self.create_latent_var(1)
+        # Seed was provided, use it to sample
+        elif z is None and seed:
             z = self.create_latent_var(1, seed)
+        # Either z was passed, or it was created above
         return self.G(z).squeeze()
 
 
@@ -265,6 +266,9 @@ class Discriminator(nn.Module):
     def forward(self, x):
         return self.features(x)
 
+
     def clip(self, c=0.05):
+        """Weight clipping in (-c, c)"""
+
         for p in self.features.parameters():
-            p = p.mul(c)
+            p.data.clamp_(-c, c)

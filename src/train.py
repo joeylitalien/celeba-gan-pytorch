@@ -20,12 +20,13 @@ import torchvision.utils
 
 import numpy as np
 import pickle
-import os, sys
+import glob, os, sys
 import datetime
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import utils
+import subprocess as sp
 import argparse
 
 
@@ -45,12 +46,12 @@ class CelebA(object):
 
         # Checkpoint parameters (when, where)
         self.batch_report_interval = ckpt_params['batch_report_interval']
-        self.ckpts_path = ckpt_params['ckpts_path']
+        self.ckpt_path = ckpt_params['ckpt_path']
         self.save_stats_interval = ckpt_params['save_stats_interval']
 
         # Create directories if they don't exist
-        if not os.path.isdir(self.ckpts_path):
-            os.mkdir(self.ckpts_path)
+        if not os.path.isdir(self.ckpt_path):
+            os.mkdir(self.ckpt_path)
         if not os.path.isdir(self.gen_dir):
             os.mkdir(self.gen_dir)
 
@@ -60,8 +61,6 @@ class CelebA(object):
 
         # Make sure report interval divides total num of batches
         self.num_batches = self.train_len // self.batch_size
-        #assert self.num_batches % self.batch_report_interval == 0, \
-        #    'Batch report interval must divide total number of batches per epoch'
 
         # Get ready to ruuummmmmmble
         self.compile()
@@ -90,14 +89,39 @@ class CelebA(object):
         if torch.cuda.is_available() and self.use_cuda:
             self.gan = self.gan.cuda()
 
+        # Create fixed latent variables for inference while training
+        self.latent_vars = []
+        for i in range(10):
+            self.latent_vars.append(self.gan.create_latent_var(1))
+
 
     def save_stats(self, stats):
         """Save model statistics"""
 
-        fname_pkl = '{}/{}-stats.pkl'.format(self.ckpts_path, self.gan_type)
+        fname_pkl = '{}/{}-stats.pkl'.format(self.ckpt_path, self.gan_type)
         print('Saving model statistics to: {}'.format(fname_pkl))
         with open(fname_pkl, 'wb') as fp:
             pickle.dump(stats, fp)
+
+
+    def eval(self, n, epoch=None, while_training=False):
+        """Sample examples from generator's distribution"""
+
+        # Predict images to see progress
+        for i in range(n):
+            # Reuse fixed latent variables to keep random process intact
+            if while_training:
+                img = self.gan.generate_img(self.latent_vars[i])
+            else:
+                img = self.gan.generate_img()
+            fname_in = '{}/test{:d}.png'.format(self.ckpt_path, i)
+            torchvision.utils.save_image(img.data, fname_in)
+        stack = 'montage {}/test* -tile x2 -geometry 64x64+1+1 \
+            {}/epoch'.format(self.ckpt_path, self.ckpt_path)
+        stack = stack + str(epoch + 1) + '.png' if epoch is not None else stack + '.png'
+        sp.call(stack.split())
+        for f in glob.glob('{}/test*'.format(self.ckpt_path)):
+            os.remove(f)
 
 
     def train(self, nb_epochs, data_loader):
@@ -128,9 +152,9 @@ class CelebA(object):
                 if torch.cuda.is_available() and self.use_cuda:
                     x = x.cuda()
 
-                # Update generator every 3x we update discriminator
+                # Update generator every 5x we update discriminator
                 D_loss = self.gan.train_D(x, self.D_optimizer, self.batch_size)
-                if batch_idx % 3 == 0:
+                if batch_idx % 5 == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
                 D_losses.update(D_loss, self.batch_size)
                 G_losses.update(G_loss, self.batch_size)
@@ -154,7 +178,8 @@ class CelebA(object):
             # Save model
             utils.clear_line()
             print('Elapsed time for epoch: {}'.format(utils.time_elapsed_since(start_epoch)))
-            self.gan.save_model(epoch)
+            self.gan.save_model(self.ckpt_path, epoch)
+            self.eval(10, epoch=epoch, while_training=True)
 
         # Print elapsed time
         elapsed = utils.time_elapsed_since(start)
@@ -171,9 +196,11 @@ if __name__ == '__main__':
         default='./checkpoints')
     parser.add_argument('-t', '--type', help='model type (gan or wgan)',
         action='store', choices=['gan', 'wgan'], default='gan', type=str)
-    parser.add_argument('-r', '--redux', help='train on smaller dataset',
+    parser.add_argument('-r', '--redux', help='train on smaller dataset with 10k faces',
         action='store_true')
-    parser.add_argument('--nb-epochs', help='number of epochs', default=10, type=int)
+    parser.add_argument('-n', '--nb-epochs', help='number of epochs', default=10, type=int)
+    parser.add_argument('-s', '--seed', help='random seed for debugging', type=int)
+    parser.add_argument('-gpu', '--cuda', help='use cuda', action='store_true')
     args = parser.parse_args()
 
     # GAN parameters (type and latent dimension size)
@@ -191,20 +218,24 @@ if __name__ == '__main__':
         'learning_rate': 0.0002,
         'momentum': (0.5, 0.999),
         'optim': 'adam',
-        'use_cuda': True
+        'use_cuda': args.cuda
     }
 
     # Checkpoint parameters (report interval size, directories)
     ckpt_params = {
         'batch_report_interval': 100,
-        'ckpts_path': args.ckpt,
+        'ckpt_path': args.ckpt,
         'save_stats_interval': 500
     }
 
     # Ready to train
-    gan = CelebA(train_params, ckpt_params, gan_params)
+    model = CelebA(train_params, ckpt_params, gan_params)
     data_loader = utils.load_dataset(train_params['root_dir'],
         train_params['batch_size'])
 
+    if args.seed:
+        torch.manual_seed(args.seed)
+
+    #model.eval(10, 1)
     # Train
-    gan.train(args.nb_epochs, data_loader)
+    model.train(args.nb_epochs, data_loader)
