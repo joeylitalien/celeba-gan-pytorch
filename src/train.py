@@ -49,8 +49,6 @@ class CelebA(object):
         self.save_stats_interval = ckpt_params['save_stats_interval']
 
         # Create directories if they don't exist
-        if not os.path.isdir(self.stats_path):
-            os.mkdir(self.stats_path)
         if not os.path.isdir(self.ckpts_path):
             os.mkdir(self.ckpts_path)
         if not os.path.isdir(self.gen_dir):
@@ -169,13 +167,13 @@ if __name__ == '__main__':
 
     # Argument parser
     parser = argparse.ArgumentParser(description='Generative adversarial network (GAN) implementation in PyTorch')
-    parser.add_argument('-c', '--ckpt',
-        help='checkpoint path', metavar='PATH', default='./checkpoints')
-    parser.add_argument('-p', '--pretrained',
-        help='load pretrained model (generator only)', metavar='PATH')
-    parser.add_argument('-t', '--type', help='model type (gan or wgan)')
+    parser.add_argument('-c', '--ckpt', help='checkpoint path', metavar='PATH',
+        default='./checkpoints')
+    parser.add_argument('-t', '--type', help='model type (gan or wgan)',
+        action='store', choices=['gan', 'wgan'], default='gan', type=str)
     parser.add_argument('-r', '--redux', help='train on smaller dataset',
         action='store_true')
+    parser.add_argument('--nb-epochs', help='number of epochs', default=10, type=int)
     args = parser.parse_args()
 
     # GAN parameters (type and latent dimension size)
@@ -203,37 +201,10 @@ if __name__ == '__main__':
         'save_stats_interval': 500
     }
 
-    # Ready to train/test
+    # Ready to train
     gan = CelebA(train_params, ckpt_params, gan_params)
     data_loader = utils.load_dataset(train_params['root_dir'],
         train_params['batch_size'])
 
-    if args.pretrained:
-        gan.load_model('dcgan-gen', cpu=True)
-
-    """
-    if args.latent_play:
-        gan.load_model('dcgan-gen', cpu=True)
-        torch.manual_seed(442)
-        z0 = gan.gan.create_latent_var(1)
-        img = gan.gan.generate_img(z0)
-        fname_in = '../play/dim_og.png'
-        img = utils.unnormalize(img)
-        torchvision.utils.save_image(img, fname_in)
-        for i in range(100):
-            z1 = z0.clone()
-            z = z1[0, i, :, :].data[0][0]
-            z1[0, i, :, :] = -np.sign(z) * 3
-            print('i={:2d}, z={:2.4f}'.format(i, z))
-            img = gan.gan.generate_img(z1)
-            img = utils.unnormalize(img)
-            fname_in = '../play/dim{:d}.png'.format(i)
-            torchvision.utils.save_image(img, fname_in)
-            #torchvision.utils.save_image(img, fname_out)
-
-    """
-    # for i in range(50):
-    #     img = gan.gan.generate_img()
-    #     img = utils.unnormalize(img)
-    #     fname = '../generated/test{:d}.png'.format(i)
-    #     torchvision.utils.save_image(img, fname)
+    # Train
+    gan.train(args.nb_epochs, data_loader)

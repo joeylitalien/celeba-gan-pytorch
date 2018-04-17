@@ -98,9 +98,11 @@ class DCGAN(nn.Module):
 
 
 
-    def create_latent_var(self, batch_size):
+    def create_latent_var(self, batch_size, seed=None):
         """Create latent variable z"""
 
+        if seed:
+            torch.manual_seed(seed)
         z = torch.randn(batch_size, self.latent_dim)
         z = Variable(z.unsqueeze(-1).unsqueeze(-1))
         if torch.cuda.is_available() and self.use_cuda:
@@ -111,7 +113,7 @@ class DCGAN(nn.Module):
     def train_G(self, G_optimizer, batch_size):
         """Update generator parameters"""
 
-        if self.gan_type is 'gan':
+        if self.gan_type == 'gan':
             self.G.zero_grad()
 
             # Through generator, then discriminator
@@ -127,7 +129,7 @@ class DCGAN(nn.Module):
             #  Update generator loss
             G_loss = G_train_loss.data[0]
 
-        elif self.gan_type is 'wgan':
+        elif self.gan_type == 'wgan':
             self.G.zero_grad()
 
             # Through generator, then discriminator
@@ -152,7 +154,7 @@ class DCGAN(nn.Module):
     def train_D(self, x, D_optimizer, batch_size):
         """Update discriminator parameters"""
 
-        if self.gan_type is 'gan':
+        if self.gan_type == 'gan':
             self.D.zero_grad()
 
             # Through discriminator and evaluate loss
@@ -173,7 +175,7 @@ class DCGAN(nn.Module):
             # Update discriminator loss
             D_loss = D_train_loss.data[0]
 
-        elif self.gan_type is 'wgan':
+        elif self.gan_type == 'wgan':
             self.D.zero_grad()
 
             # Through discriminator and evaluate loss
@@ -203,34 +205,14 @@ class DCGAN(nn.Module):
         return D_loss
 
 
-    def generate_img(self, z=None):
+    def generate_img(self, z=None, seed=None):
         """Sample random image from GAN"""
 
-        if z is None:
-            z = self.create_latent_var(1)
+        if seed is None:
+            self.create_latent_var(1)
+        else:
+            z = self.create_latent_var(1, seed)
         return self.G(z).squeeze()
-
-
-    def latent_lerp(self, z0, z1, nb_frames):
-        """Interpolate between two images in latent space"""
-
-        imgs = []
-        for i in range(nb_frames):
-            alpha = i / nb_frames
-            z = (1 - alpha) * z0 + alpha * z1
-            imgs.append(self.generate_img(z))
-        return imgs
-
-
-    def screen_lerp(self, x0, x1, nb_frames):
-        """Interpolate between two images in latent space"""
-
-        imgs = []
-        for i in range(nb_frames):
-            alpha = i / nb_frames
-            x = (1 - alpha) * x0 + alpha * x1
-            imgs.append(x)
-        return imgs
 
 
 class Generator(nn.Module):

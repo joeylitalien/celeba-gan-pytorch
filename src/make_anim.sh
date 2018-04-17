@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Check ffmpeg is installed
 ffmpeg=$(dpkg-query -W -f='${Status}' ffmpeg | grep -c "ok installed")
 
@@ -10,9 +12,9 @@ fi
 
 # Ready to generate video, takes frame directory as input
 echo "Creating video..."
-ffmpeg -f image2 -i $1/test%d.png $1/anim.mp4
-ffmpeg -i $1/anim.mp4 -pix_fmt rgb24 $1/anim.gif
+mkdir $1/video
+ffmpeg -y -f image2 -i $1/frame%d.png $1/video/anim.mp4
+ffmpeg -y -i $1/video/anim.mp4 -pix_fmt rgb24 $1/video/anim.gif
 
-# Old code
-# ffmpeg -f image2 -i ../interpolated/test%d.png ../interpolated/anim.mp4
-# ffmpeg -i ../interpolated/anim.mp4 -pix_fmt rgb24 ../interpolated/anim.gif
+# Clean extra frames
+ls $1/frame* | sort --version-sort | tail -$2 | xargs rm

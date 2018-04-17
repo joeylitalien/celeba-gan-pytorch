@@ -30,11 +30,10 @@ def format_hdr(gan, root_dir, training_len):
     """Print type of GAN with number of parameters"""
 
     num_params_D, num_params_G = gan.get_num_params()
-    loss = gan.loss
-    if gan.loss is 'og':
+    if gan.gan_type == 'gan':
         gan_type = 'Deep convolutional GAN (DCGAN)'
         gan_loss = 'min_G max_D  E_x[log D(x)] + E_z[1 - log D(G(x))]'
-    elif gan.loss is 'wasserstein':
+    elif gan.gan_type == 'wgan':
         gan_type = 'Wasserstein GAN (WGAN)'
         gan_loss = 'min_G max_D  E_x[D(x)] - E_z[D(G(x))]'
     else:
