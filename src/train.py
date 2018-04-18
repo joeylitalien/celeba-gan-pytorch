@@ -75,7 +75,7 @@ class CelebA(object):
             self.use_cuda)
 
         # Set optimizers for generator and discriminator
-        if self.optim is 'adam':
+        if self.optim == 'adam':
             self.G_optimizer = optim.Adam(self.gan.G.parameters(),
                 lr=self.learning_rate,
                 betas=self.momentum)
@@ -83,12 +83,12 @@ class CelebA(object):
                 lr=self.learning_rate,
                 betas=self.momentum)
 
-        elif self.optim = 'rmsprop':
+        elif self.optim == 'rmsprop':
             self.G_optimizer = optim.RMSprop(self.gan.G.parameters(),
                 lr=self.learning_rate)
-            self.D_optimizer = optim.RMSProp(self.gan.D.parameters(),
+            self.D_optimizer = optim.RMSprop(self.gan.D.parameters(),
                 lr=self.learning_rate)
-                
+
         else:
             raise NotImplementedError
 
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         'train_len': 10000 if args.redux else 202599,
         'learning_rate': 0.00005,
         'momentum': (0.5, 0.999),
-        'optim': 'adam',
+        'optim': 'rmsprop',
         'use_cuda': args.cuda
     }
 
