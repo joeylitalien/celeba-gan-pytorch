@@ -32,10 +32,13 @@ def format_hdr(gan, root_dir, training_len):
     num_params_D, num_params_G = gan.get_num_params()
     if gan.gan_type == 'gan':
         gan_type = 'Deep convolutional GAN (DCGAN)'
-        gan_loss = 'min_G max_D  E_x[log D(x)] + E_z[1 - log D(G(x))]'
+        gan_loss = 'min_G max_D  E_x[log D(x)] + E_z[log (1 - D(G(z)))]'
     elif gan.gan_type == 'wgan':
         gan_type = 'Wasserstein GAN (WGAN)'
         gan_loss = 'min_G max_D  E_x[D(x)] - E_z[D(G(z))]'
+    elif gan.gan_type == 'lsgan':
+        gan_type = 'Least Squares GAN (LSGAN)'
+        gan_loss = 'min_G max_D  E_x[(D(x) - 1)^2] - E_z[D(G(z))^2]'
     else:
         gan_type = 'Unknown'
         gan_loss = 'Unknown'

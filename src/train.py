@@ -139,8 +139,9 @@ class CelebA(object):
         utils.format_hdr(self.gan, self.root_dir, self.train_len)
         start = datetime.datetime.now()
 
-        d_iter = self.n_critic
-        g_iter = 0
+        g_iter, d_iter = 0, 0
+        #n_critic = 100 if g_iter < 25 or (g_iter + 1) % 500 == 0 else self.n_critic
+        n_critic = self.n_critic
 
         # Train
         for epoch in range(nb_epochs):
@@ -162,13 +163,51 @@ class CelebA(object):
                 if torch.cuda.is_available() and self.use_cuda:
                     x = x.cuda()
 
+                """
+                # leafs
+                bs = self.batch_size
+                z_dim = self.latent_dim
+                z = Variable(torch.randn(bs, z_dim))
+                z = z.unsqueeze(-1).unsqueeze(-1)
+                r_lbl = Variable(torch.ones(bs))
+                f_lbl = Variable(torch.zeros(bs))
+                if torch.cuda.is_available() and self.use_cuda:
+                    x = x.cuda()
+                    z = z.cuda()
+                    r_lbl = r_lbl.cuda()
+                    f_lbl = f_lbl.cuda()
+
+                f_imgs = self.gan.G(z)
+
+                # train D
+                bce = nn.BCEWithLogitsLoss()
+                r_logit = self.gan.D(x)
+                f_logit = self.gan.D(f_imgs.detach())
+                D_r_loss = bce(r_logit, r_lbl)
+                D_f_loss = bce(f_logit, f_lbl)
+                D_loss = D_r_loss + D_f_loss
+
+                self.gan.D.zero_grad()
+                D_loss.backward()
+                self.D_optimizer.step()
+
+                # train G
+                f_logit = self.gan.D(f_imgs)
+                G_loss = bce(f_logit, r_lbl)
+
+                self.gan.D.zero_grad()
+                self.gan.G.zero_grad()
+                G_loss.backward()
+                self.G_optimizer.step()
+                """
+
                 # Update discriminator
-                D_loss = self.gan.train_D(x, self.D_optimizer, self.batch_size)
+                D_loss, fake_imgs = self.gan.train_D(x, self.D_optimizer, self.batch_size)
                 D_losses.update(D_loss, self.batch_size)
                 d_iter += 1
 
                 # Update generator
-                if batch_idx % d_iter == 0:
+                if batch_idx % n_critic == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
                     G_losses.update(G_loss, self.batch_size)
                     g_iter += 1
@@ -178,11 +217,13 @@ class CelebA(object):
                 avg_time_per_batch.update(batch_time)
 
                 # Report model statistics
-                if batch_idx % self.batch_report_interval == 0 and batch_idx:
+                if (batch_idx % self.batch_report_interval == 0 and batch_idx) or \
+                    self.batch_report_interval == self.num_batches:
                     G_all_losses.append(G_losses.avg)
                     D_all_losses.append(D_losses.avg)
                     utils.show_learning_stats(batch_idx, self.num_batches, G_losses.avg, D_losses.avg, avg_time_per_batch.avg)
                     [k.reset() for k in [G_losses, D_losses, avg_time_per_batch]]
+                    self.eval(10, epoch=epoch, while_training=True)
 
                 # Save stats
                 if batch_idx % self.save_stats_interval == 0 and batch_idx:
@@ -208,8 +249,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generative adversarial network (GAN) implementation in PyTorch')
     parser.add_argument('-c', '--ckpt', help='checkpoint path', metavar='PATH',
         default='./checkpoints')
-    parser.add_argument('-t', '--type', help='model type (gan or wgan)',
-        action='store', choices=['gan', 'wgan'], default='gan', type=str)
+    parser.add_argument('-t', '--type', help='model type: gan | wgan | lsgan',
+        action='store', choices=['gan', 'wgan', 'lsgan'], default='gan', type=str)
     parser.add_argument('-r', '--redux', help='train on smaller dataset with 10k faces',
         action='store_true')
     parser.add_argument('-n', '--nb-epochs', help='number of epochs', default=10, type=int)
@@ -221,18 +262,18 @@ if __name__ == '__main__':
     gan_params = {
         'gan_type': args.type,
         'latent_dim': 100,
-        'n_critic': 5
+        'n_critic': 1
     }
 
     # Training parameters (saving directory, learning rate, optimizer, etc.)
     train_params = {
         'root_dir': './../data/celebA_{}'.format('redux' if args.redux else 'all'),
         'gen_dir': './../generated',
-        'batch_size': 128,
-        'train_len': 10000 if args.redux else 202599,
-        'learning_rate': 0.00005,
+        'batch_size': 64,
+        'train_len': 12800 if args.redux else 202599,
+        'learning_rate': 0.0002,
         'momentum': (0.5, 0.999),
-        'optim': 'rmsprop',
+        'optim': 'adam',
         'use_cuda': args.cuda
     }
 

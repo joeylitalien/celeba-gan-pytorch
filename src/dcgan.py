@@ -113,16 +113,17 @@ class DCGAN(nn.Module):
     def train_G(self, G_optimizer, batch_size):
         """Update generator parameters"""
 
+        self.G.zero_grad()
+        self.D.zero_grad()
+
+        # Through generator, then discriminator
+        z = self.create_latent_var(self.batch_size)
+        fake_imgs = self.G(z)
+        D_out_fake = self.D(fake_imgs)
+
         if self.gan_type == 'gan':
-            self.G.zero_grad()
-
-            # Through generator, then discriminator
-            z = self.create_latent_var(self.batch_size)
-            fake_imgs = self.G(z)
-            D_out = self.D(fake_imgs)
-
             # Evaluate loss and backpropagate
-            G_train_loss = F.binary_cross_entropy(D_out, self.y_real)
+            G_train_loss = F.binary_cross_entropy(D_out_fake, self.y_real)
             G_train_loss.backward()
             G_optimizer.step()
 
@@ -130,15 +131,17 @@ class DCGAN(nn.Module):
             G_loss = G_train_loss.data[0]
 
         elif self.gan_type == 'wgan':
-            self.G.zero_grad()
-
-            # Through generator, then discriminator
-            z = self.create_latent_var(self.batch_size)
-            fake_imgs = self.G(z)
-            fake_logit = self.D(fake_imgs)
-
             # Evaluate loss and backpropagate (negative since we minimize)
-            G_train_loss = -fake_logit.mean()
+            G_train_loss = -D_out_fake.mean()
+            G_train_loss.backward()
+            G_optimizer.step()
+
+            #  Update generator loss
+            G_loss = G_train_loss.data[0]
+
+        elif self.gan_type == 'lsgan':
+            # Evaluate loss and backpropagate (negative since we minimize)
+            G_train_loss = torch.mean((D_out_fake - 1) ** 2)
             G_train_loss.backward()
             G_optimizer.step()
 
@@ -154,18 +157,17 @@ class DCGAN(nn.Module):
     def train_D(self, x, D_optimizer, batch_size):
         """Update discriminator parameters"""
 
+        self.D.zero_grad()
+
+        # Through generator, then discriminator
+        D_out_real = self.D(x)
+        z = self.create_latent_var(self.batch_size)
+        fake_imgs = self.G(z).detach()
+        D_out_fake = self.D(fake_imgs)
+
         if self.gan_type == 'gan':
-            self.D.zero_grad()
-
-            # Through discriminator and evaluate loss
-            D_out = self.D(x)
-            D_real_loss = F.binary_cross_entropy(D_out, self.y_real)
-
-            # Through generator, then discriminator
-            z = self.create_latent_var(self.batch_size)
-            fake_imgs = self.G(z)
-            D_out = self.D(fake_imgs)
-            D_fake_loss = F.binary_cross_entropy(D_out, self.y_fake)
+            D_real_loss = F.binary_cross_entropy(D_out_real, self.y_real)
+            D_fake_loss = F.binary_cross_entropy(D_out_fake, self.y_fake)
 
             # Update discriminator
             D_train_loss = D_real_loss + D_fake_loss
@@ -176,18 +178,8 @@ class DCGAN(nn.Module):
             D_loss = D_train_loss.data[0]
 
         elif self.gan_type == 'wgan':
-            self.D.zero_grad()
-
-            # Through discriminator and evaluate loss
-            real_logit = self.D(x)
-
-            # Through generator, then discriminator
-            z = self.create_latent_var(self.batch_size)
-            fake_imgs = self.G(z)
-            fake_logit = self.D(fake_imgs)
-
             # Update discriminator (negative since we minimize)
-            D_train_loss = -(real_logit.mean() - fake_logit.mean())
+            D_train_loss = -(D_out_real.mean() - D_out_fake.mean())
             D_train_loss.backward()
             D_optimizer.step()
 
@@ -197,10 +189,21 @@ class DCGAN(nn.Module):
             # Update discriminator loss
             D_loss = D_train_loss.data[0]
 
+        elif self.gan_type == 'lsgan':
+            # Update discriminator
+            D_real_loss = torch.mean((D_out_real - 1) ** 2)
+            D_fake_loss = torch.mean(D_out_fake ** 2)
+            D_train_loss = D_real_loss + D_fake_loss
+            D_train_loss.backward()
+            D_optimizer.step()
+
+            # Update discriminator loss
+            D_loss = D_train_loss.data[0]
+
         else:
             raise NotImplementedError
 
-        return D_loss
+        return D_loss, fake_imgs
 
 
     def generate_img(self, z=None, seed=None):
@@ -222,6 +225,7 @@ class Generator(nn.Module):
 
     def __init__(self, latent_dim=100):
         super(Generator, self).__init__()
+        """
         self.features = nn.Sequential(
             nn.ConvTranspose2d(latent_dim, 1024,
                 kernel_size=4, stride=1, padding=0),
@@ -238,6 +242,50 @@ class Generator(nn.Module):
             nn.ReLU(),
             nn.ConvTranspose2d(128, 3, 4, 2, 1),
             nn.Tanh())
+        """
+        self.features = nn.Sequential(
+            nn.ConvTranspose2d(latent_dim, 512, kernel_size=4, stride=1, padding=0),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(512, 256, 4, 2, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(256, 128, 4, 2, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(128, 64, 4, 2, 1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(64, 3, 4, 2, 1),
+            nn.Tanh())
+
+        """
+        def dconv_bn_relu(in_dim, out_dim):
+            return nn.Sequential(
+                nn.ConvTranspose2d(in_dim, out_dim, 5, 2,
+                                   padding=2, output_padding=1, bias=False),
+                nn.BatchNorm2d(out_dim),
+                nn.ReLU())
+
+        dim = 64
+        self.l1 = nn.Sequential(
+            nn.Linear(latent_dim, dim * 8 * 4 * 4, bias=False),
+            nn.BatchNorm1d(dim * 8 * 4 * 4),
+            nn.ReLU())
+
+        self.l2_5 = nn.Sequential(
+            dconv_bn_relu(dim * 8, dim * 4),
+            dconv_bn_relu(dim * 4, dim * 2),
+            dconv_bn_relu(dim * 2, dim),
+            nn.ConvTranspose2d(dim, 3, 5, 2, padding=2, output_padding=1),
+            nn.Tanh())
+
+    def forward(self, x):
+        y = self.l1(x)
+        y = y.view(y.size(0), -1, 4, 4)
+        y = self.l2_5(y)
+        return y
+    """
 
     def forward(self, x):
         return self.features(x)
@@ -248,23 +296,59 @@ class Discriminator(nn.Module):
 
     def __init__(self):
         super(Discriminator, self).__init__()
+        """
         self.features = nn.Sequential(
-            nn.Conv2d(3, 128, 4, 2, 1),
+            nn.Conv2d(3, 128, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(256, 512, 4, 2, 1),
+            nn.Conv2d(256, 512, 4, 2, 1, bias=False),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(512, 1024, 4, 2, 1),
+            nn.Conv2d(512, 1024, 4, 2, 1, bias=False),
             nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(1024, 1, 4, 1, 0),
+            nn.Conv2d(1024, 1, 4, 1, 0, bias=False),
+            #nn.Conv2d(512, 1, 4, 1, 0),
             nn.Sigmoid())
+        """
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(64, 128, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(128, 256, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(256, 512, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(512, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid())
+        """
+        def conv_bn_lrelu(in_dim, out_dim):
+            return nn.Sequential(
+                nn.Conv2d(in_dim, out_dim, 5, 2, 2),
+                nn.BatchNorm2d(out_dim),
+                nn.LeakyReLU(0.2))
+
+        in_dim = 3
+        dim = 64
+        self.ls = nn.Sequential(
+            nn.Conv2d(in_dim, dim, 5, 2, 2), nn.LeakyReLU(0.2),
+            conv_bn_lrelu(dim, dim * 2),
+            conv_bn_lrelu(dim * 2, dim * 4),
+            conv_bn_lrelu(dim * 4, dim * 8),
+            nn.Conv2d(dim * 8, 1, 4))
+        """
 
     def forward(self, x):
         return self.features(x).squeeze()
+        #y = self.ls(x)
+        #y = y.view(-1)
+        #return y
 
 
     def clip(self, c=0.05):
