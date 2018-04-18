@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # Argument parser
     parser = argparse.ArgumentParser(description='Lerp in latent/screen space')
     parser.add_argument('-gpu', '--cuda', help='use cuda', action='store_true')
-    parser.add_argument('-t', '--type', help='model type (gan or wgan)',
+    parser.add_argument('-t', '--type', help='model type: gan | wgan)',
         action='store', choices=['gan', 'wgan'], default='gan', type=str)
     parser.add_argument('-p', '--pretrained',
         help='load pretrained model (generator only)', metavar='PATH')

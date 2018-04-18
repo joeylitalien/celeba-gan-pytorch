@@ -139,6 +139,10 @@ class CelebA(object):
         utils.format_hdr(self.gan, self.root_dir, self.train_len)
         start = datetime.datetime.now()
 
+        g_iter, d_iter = 0, 0
+        #n_critic = 100 if g_iter < 25 or (g_iter + 1) % 500 == 0 else self.n_critic
+        n_critic = self.n_critic
+
         # Train
         for epoch in range(nb_epochs):
             print('EPOCH {:d} / {:d}'.format(epoch + 1, nb_epochs))
@@ -159,23 +163,29 @@ class CelebA(object):
                 if torch.cuda.is_available() and self.use_cuda:
                     x = x.cuda()
 
-                # Update generator every n_critic we update discriminator
+                # Update discriminator
                 D_loss = self.gan.train_D(x, self.D_optimizer, self.batch_size)
-                if batch_idx % self.n_critic == 0:
+                D_losses.update(D_loss, self.batch_size)
+                d_iter += 1
+
+                # Update generator
+                if batch_idx % n_critic == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
                     G_losses.update(G_loss, self.batch_size)
-                D_losses.update(D_loss, self.batch_size)
+                    g_iter += 1
 
                 batch_end = datetime.datetime.now()
                 batch_time = int((batch_end - batch_start).total_seconds() * 1000)
                 avg_time_per_batch.update(batch_time)
 
                 # Report model statistics
-                if batch_idx % self.batch_report_interval == 0 and batch_idx:
+                if (batch_idx % self.batch_report_interval == 0 and batch_idx) or \
+                    self.batch_report_interval == self.num_batches:
                     G_all_losses.append(G_losses.avg)
                     D_all_losses.append(D_losses.avg)
                     utils.show_learning_stats(batch_idx, self.num_batches, G_losses.avg, D_losses.avg, avg_time_per_batch.avg)
                     [k.reset() for k in [G_losses, D_losses, avg_time_per_batch]]
+                    self.eval(10, epoch=epoch, while_training=True)
 
                 # Save stats
                 if batch_idx % self.save_stats_interval == 0 and batch_idx:
@@ -201,8 +211,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generative adversarial network (GAN) implementation in PyTorch')
     parser.add_argument('-c', '--ckpt', help='checkpoint path', metavar='PATH',
         default='./checkpoints')
-    parser.add_argument('-t', '--type', help='model type (gan or wgan)',
-        action='store', choices=['gan', 'wgan'], default='gan', type=str)
+    parser.add_argument('-t', '--type', help='model type: gan | wgan | lsgan',
+        action='store', choices=['gan', 'wgan', 'lsgan'], default='gan', type=str)
     parser.add_argument('-r', '--redux', help='train on smaller dataset with 10k faces',
         action='store_true')
     parser.add_argument('-n', '--nb-epochs', help='number of epochs', default=10, type=int)
@@ -214,18 +224,18 @@ if __name__ == '__main__':
     gan_params = {
         'gan_type': args.type,
         'latent_dim': 100,
-        'n_critic': 5
+        'n_critic': 1
     }
 
     # Training parameters (saving directory, learning rate, optimizer, etc.)
     train_params = {
         'root_dir': './../data/celebA_{}'.format('redux' if args.redux else 'all'),
         'gen_dir': './../generated',
-        'batch_size': 128,
-        'train_len': 10000 if args.redux else 202599,
-        'learning_rate': 0.00005,
+        'batch_size': 64,
+        'train_len': 12800 if args.redux else 202599,
+        'learning_rate': 0.0002,
         'momentum': (0.5, 0.999),
-        'optim': 'rmsprop',
+        'optim': 'adam',
         'use_cuda': args.cuda
     }
 
