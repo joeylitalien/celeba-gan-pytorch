@@ -58,6 +58,7 @@ class CelebA(object):
         # GAN parameters
         self.gan_type = gan_params['gan_type']
         self.latent_dim = gan_params['latent_dim']
+        self.n_critic = gan_params['n_critic']
 
         # Make sure report interval divides total num of batches
         self.num_batches = self.train_len // self.batch_size
@@ -82,6 +83,12 @@ class CelebA(object):
                 lr=self.learning_rate,
                 betas=self.momentum)
 
+        elif self.optim = 'rmsprop':
+            self.G_optimizer = optim.RMSprop(self.gan.G.parameters(),
+                lr=self.learning_rate)
+            self.D_optimizer = optim.RMSProp(self.gan.D.parameters(),
+                lr=self.learning_rate)
+                
         else:
             raise NotImplementedError
 
@@ -152,12 +159,12 @@ class CelebA(object):
                 if torch.cuda.is_available() and self.use_cuda:
                     x = x.cuda()
 
-                # Update generator every 5x we update discriminator
+                # Update generator every n_critic we update discriminator
                 D_loss = self.gan.train_D(x, self.D_optimizer, self.batch_size)
-                if batch_idx % 5 == 0:
+                if batch_idx % self.n_critic == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
+                    G_losses.update(G_loss, self.batch_size)
                 D_losses.update(D_loss, self.batch_size)
-                G_losses.update(G_loss, self.batch_size)
 
                 batch_end = datetime.datetime.now()
                 batch_time = int((batch_end - batch_start).total_seconds() * 1000)
@@ -206,7 +213,8 @@ if __name__ == '__main__':
     # GAN parameters (type and latent dimension size)
     gan_params = {
         'gan_type': args.type,
-        'latent_dim': 100
+        'latent_dim': 100,
+        'n_critic': 5
     }
 
     # Training parameters (saving directory, learning rate, optimizer, etc.)
@@ -215,7 +223,7 @@ if __name__ == '__main__':
         'gen_dir': './../generated',
         'batch_size': 128,
         'train_len': 10000 if args.redux else 202599,
-        'learning_rate': 0.0002,
+        'learning_rate': 0.00005,
         'momentum': (0.5, 0.999),
         'optim': 'adam',
         'use_cuda': args.cuda

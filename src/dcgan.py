@@ -13,7 +13,7 @@ from __future__ import print_function
 
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
+from torch.autograd import Variable, grad
 import torch.nn.functional as F
 import numpy as np
 
@@ -119,7 +119,7 @@ class DCGAN(nn.Module):
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
             fake_imgs = self.G(z)
-            D_out = self.D(fake_imgs).squeeze()
+            D_out = self.D(fake_imgs)
 
             # Evaluate loss and backpropagate
             G_train_loss = F.binary_cross_entropy(D_out, self.y_real)
@@ -135,9 +135,9 @@ class DCGAN(nn.Module):
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
             fake_imgs = self.G(z)
-            fake_logit = self.D(fake_imgs).squeeze()
+            fake_logit = self.D(fake_imgs)
 
-            # Evaluate loss and backpropagate
+            # Evaluate loss and backpropagate (negative since we minimize)
             G_train_loss = -fake_logit.mean()
             G_train_loss.backward()
             G_optimizer.step()
@@ -158,13 +158,13 @@ class DCGAN(nn.Module):
             self.D.zero_grad()
 
             # Through discriminator and evaluate loss
-            D_out = self.D(x).squeeze()
+            D_out = self.D(x)
             D_real_loss = F.binary_cross_entropy(D_out, self.y_real)
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
             fake_imgs = self.G(z)
-            D_out = self.D(fake_imgs).squeeze()
+            D_out = self.D(fake_imgs)
             D_fake_loss = F.binary_cross_entropy(D_out, self.y_fake)
 
             # Update discriminator
@@ -179,15 +179,15 @@ class DCGAN(nn.Module):
             self.D.zero_grad()
 
             # Through discriminator and evaluate loss
-            real_logit = self.D(x).squeeze()
+            real_logit = self.D(x)
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
             fake_imgs = self.G(z)
-            fake_logit = self.D(fake_imgs).squeeze()
+            fake_logit = self.D(fake_imgs)
 
-            # Update discriminator
-            D_train_loss = real_logit.mean() - fake_logit.mean()
+            # Update discriminator (negative since we minimize)
+            D_train_loss = -(real_logit.mean() - fake_logit.mean())
             D_train_loss.backward()
             D_optimizer.step()
 
@@ -264,11 +264,11 @@ class Discriminator(nn.Module):
             nn.Sigmoid())
 
     def forward(self, x):
-        return self.features(x)
+        return self.features(x).squeeze()
 
 
     def clip(self, c=0.05):
         """Weight clipping in (-c, c)"""
 
-        for p in self.features.parameters():
+        for p in self.parameters():
             p.data.clamp_(-c, c)

@@ -35,7 +35,7 @@ def format_hdr(gan, root_dir, training_len):
         gan_loss = 'min_G max_D  E_x[log D(x)] + E_z[1 - log D(G(x))]'
     elif gan.gan_type == 'wgan':
         gan_type = 'Wasserstein GAN (WGAN)'
-        gan_loss = 'min_G max_D  E_x[D(x)] - E_z[D(G(x))]'
+        gan_loss = 'min_G max_D  E_x[D(x)] - E_z[D(G(z))]'
     else:
         gan_type = 'Unknown'
         gan_loss = 'Unknown'
