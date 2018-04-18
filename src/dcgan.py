@@ -13,7 +13,7 @@ from __future__ import print_function
 
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
+from torch.autograd import Variable, grad
 import torch.nn.functional as F
 import numpy as np
 
@@ -30,10 +30,10 @@ class DCGAN(nn.Module):
     and weight initialization schemes. No optimizers are attached.
     """
 
-    def __init__(self, loss="og", latent_dim=100, batch_size=128,
+    def __init__(self, gan_type='gan', latent_dim=100, batch_size=128,
             use_cuda=True):
         super(DCGAN, self).__init__()
-        self.loss = loss
+        self.gan_type = gan_type
         self.latent_dim = latent_dim
         self.batch_size = batch_size
         self.use_cuda = use_cuda
@@ -48,6 +48,33 @@ class DCGAN(nn.Module):
         if torch.cuda.is_available() and self.use_cuda:
             self.y_real = self.y_real.cuda()
             self.y_fake = self.y_fake.cuda()
+
+
+    def load_model(self, filename, use_cuda=True):
+        """Load PyTorch model"""
+
+        print('Loading generator checkpoint from: {}'.format(filename))
+        if use_cuda:
+            self.G.load_state_dict(torch.load(filename))
+        else:
+            self.G.load_state_dict(torch.load(filename, map_location='cpu'))
+
+
+    def save_model(self, ckpt_path, epoch, override=True):
+        """Save model"""
+
+        if override:
+            fname_gen_pt = '{}/{}-gen.pt'.format(ckpt_path, self.gan_type)
+            fname_disc_pt = '{}/{}-disc.pt'.format(ckpt_path, self.gan_type)
+        else:
+            fname_gen_pt = '{}/{}-gen-epoch-{}.pt'.format(ckpt_path, self.gan_type, epoch + 1)
+            fname_disc_pt = '{}/{}-disc-epoch-{}.pt'.format(ckpt_path, self.gan_type, epoch + 1)
+
+        print('Saving generator checkpoint to: {}'.format(fname_gen_pt))
+        torch.save(self.G.state_dict(), fname_gen_pt)
+        sep = '\n' + 80 * '-'
+        print('Saving discriminator checkpoint to: {}{}'.format(fname_disc_pt, sep))
+        torch.save(self.D.state_dict(), fname_disc_pt)
 
 
     def init_weights(self, model):
@@ -71,9 +98,11 @@ class DCGAN(nn.Module):
 
 
 
-    def create_latent_var(self, batch_size):
+    def create_latent_var(self, batch_size, seed=None):
         """Create latent variable z"""
 
+        if seed:
+            torch.manual_seed(seed)
         z = torch.randn(batch_size, self.latent_dim)
         z = Variable(z.unsqueeze(-1).unsqueeze(-1))
         if torch.cuda.is_available() and self.use_cuda:
@@ -84,16 +113,32 @@ class DCGAN(nn.Module):
     def train_G(self, G_optimizer, batch_size):
         """Update generator parameters"""
 
-        if self.loss is "og":
+        if self.gan_type == 'gan':
             self.G.zero_grad()
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
-            G_out = self.G(z)
-            D_out = self.D(G_out).squeeze()
+            fake_imgs = self.G(z)
+            D_out = self.D(fake_imgs)
 
             # Evaluate loss and backpropagate
             G_train_loss = F.binary_cross_entropy(D_out, self.y_real)
+            G_train_loss.backward()
+            G_optimizer.step()
+
+            #  Update generator loss
+            G_loss = G_train_loss.data[0]
+
+        elif self.gan_type == 'wgan':
+            self.G.zero_grad()
+
+            # Through generator, then discriminator
+            z = self.create_latent_var(self.batch_size)
+            fake_imgs = self.G(z)
+            fake_logit = self.D(fake_imgs)
+
+            # Evaluate loss and backpropagate (negative since we minimize)
+            G_train_loss = -fake_logit.mean()
             G_train_loss.backward()
             G_optimizer.step()
 
@@ -109,17 +154,17 @@ class DCGAN(nn.Module):
     def train_D(self, x, D_optimizer, batch_size):
         """Update discriminator parameters"""
 
-        if self.loss is "og":
+        if self.gan_type == 'gan':
             self.D.zero_grad()
 
             # Through discriminator and evaluate loss
-            D_out = self.D(x).squeeze()
+            D_out = self.D(x)
             D_real_loss = F.binary_cross_entropy(D_out, self.y_real)
 
             # Through generator, then discriminator
             z = self.create_latent_var(self.batch_size)
-            G_out = self.G(z)
-            D_out = self.D(G_out).squeeze()
+            fake_imgs = self.G(z)
+            D_out = self.D(fake_imgs)
             D_fake_loss = F.binary_cross_entropy(D_out, self.y_fake)
 
             # Update discriminator
@@ -130,27 +175,45 @@ class DCGAN(nn.Module):
             # Update discriminator loss
             D_loss = D_train_loss.data[0]
 
+        elif self.gan_type == 'wgan':
+            self.D.zero_grad()
+
+            # Through discriminator and evaluate loss
+            real_logit = self.D(x)
+
+            # Through generator, then discriminator
+            z = self.create_latent_var(self.batch_size)
+            fake_imgs = self.G(z)
+            fake_logit = self.D(fake_imgs)
+
+            # Update discriminator (negative since we minimize)
+            D_train_loss = -(real_logit.mean() - fake_logit.mean())
+            D_train_loss.backward()
+            D_optimizer.step()
+
+            # Clip weights
+            self.D.clip()
+
+            # Update discriminator loss
+            D_loss = D_train_loss.data[0]
+
         else:
             raise NotImplementedError
 
         return D_loss
 
 
-    def generate_img(self, z=None):
+    def generate_img(self, z=None, seed=None):
         """Sample random image from GAN"""
-        if z is None:
+
+        # Nothing was provided, sample
+        if z is None and seed is None:
             z = self.create_latent_var(1)
+        # Seed was provided, use it to sample
+        elif z is None and seed:
+            z = self.create_latent_var(1, seed)
+        # Either z was passed, or it was created above
         return self.G(z).squeeze()
-
-    def interpolate(self, z0, z1):
-
-        imgs = []
-        for i in range(0,11):
-            alpha = i/10
-            z = (1-alpha)*z0 + alpha*z1
-            imgs.append(self.generate_img(z))
-        return imgs
-
 
 
 class Generator(nn.Module):
@@ -201,4 +264,11 @@ class Discriminator(nn.Module):
             nn.Sigmoid())
 
     def forward(self, x):
-        return self.features(x)
+        return self.features(x).squeeze()
+
+
+    def clip(self, c=0.05):
+        """Weight clipping in (-c, c)"""
+
+        for p in self.parameters():
+            p.data.clamp_(-c, c)
