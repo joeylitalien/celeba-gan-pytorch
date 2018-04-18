@@ -241,7 +241,6 @@ class Generator(nn.Module):
             nn.ReLU(),
             nn.ConvTranspose2d(128, 3, 4, 2, 1),
             nn.Tanh())
-            """
         self.features = nn.Sequential(
             nn.ConvTranspose2d(latent_dim, 512, kernel_size=4, stride=1, padding=0),
             nn.BatchNorm2d(512),
@@ -257,9 +256,35 @@ class Generator(nn.Module):
             nn.ReLU(inplace=True),
             nn.ConvTranspose2d(64, 3, 4, 2, 1),
             nn.Tanh())
+            """
+        def dconv_bn_relu(in_dim, out_dim):
+            return nn.Sequential(
+                nn.ConvTranspose2d(in_dim, out_dim, 5, 2,
+                                   padding=2, output_padding=1, bias=False),
+                nn.BatchNorm2d(out_dim),
+                nn.ReLU())
+
+        dim = 64
+        self.l1 = nn.Sequential(
+            nn.Linear(latent_dim, dim * 8 * 4 * 4, bias=False),
+            nn.BatchNorm1d(dim * 8 * 4 * 4),
+            nn.ReLU())
+
+        self.l2_5 = nn.Sequential(
+            dconv_bn_relu(dim * 8, dim * 4),
+            dconv_bn_relu(dim * 4, dim * 2),
+            dconv_bn_relu(dim * 2, dim),
+            nn.ConvTranspose2d(dim, 3, 5, 2, padding=2, output_padding=1),
+            nn.Tanh())
 
     def forward(self, x):
-        return self.features(x)
+        y = self.l1(x)
+        y = y.view(y.size(0), -1, 4, 4)
+        y = self.l2_5(y)
+        return y
+
+    #def forward(self, x):
+    #    return self.features(x)
 
 
 class Discriminator(nn.Module):
@@ -283,7 +308,6 @@ class Discriminator(nn.Module):
             nn.Conv2d(1024, 1, 4, 1, 0, bias=False),
             #nn.Conv2d(512, 1, 4, 1, 0),
             nn.Sigmoid())
-            """
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(64),
@@ -298,9 +322,27 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(512, 1, 4, 1, 0, bias=False),
             nn.Sigmoid())
+            """
+        def conv_bn_lrelu(in_dim, out_dim):
+            return nn.Sequential(
+                nn.Conv2d(in_dim, out_dim, 5, 2, 2),
+                nn.BatchNorm2d(out_dim),
+                nn.LeakyReLU(0.2))
+
+        in_dim = 3
+        dim = 64
+        self.ls = nn.Sequential(
+            nn.Conv2d(in_dim, dim, 5, 2, 2), nn.LeakyReLU(0.2),
+            conv_bn_lrelu(dim, dim * 2),
+            conv_bn_lrelu(dim * 2, dim * 4),
+            conv_bn_lrelu(dim * 4, dim * 8),
+            nn.Conv2d(dim * 8, 1, 4))
 
     def forward(self, x):
-        return self.features(x).squeeze()
+        y = self.ls(x)
+        y = y.view(-1)
+        return y
+        # return self.features(x).squeeze()
 
 
     def clip(self, c=0.05):
