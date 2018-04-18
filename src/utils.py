@@ -5,8 +5,8 @@ IFT6135: Representation Learning
 Assignment 4: Generative Models
 
 Authors:
-	Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
-	Joey Litalien <joey.litalien@umontreal.ca>
+    Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
+    Joey Litalien <joey.litalien@umontreal.ca>
 """
 
 from __future__ import print_function
@@ -49,7 +49,7 @@ def format_hdr(gan, root_dir, training_len):
     param_D_str = 'Nb of generator params: {:,}'.format(num_params_D)
     param_G_str = 'Nb of discriminator params: {:,}'.format(num_params_G)
     dataset = 'Training on CelebA dataset ({}) with {:,} faces'.format(root_dir, training_len)
-    hdr = '\n'.join([sep_, title, sep, dataset, type_str, loss_str, param_D_str, param_G_str, sep_])
+    hdr = '\n'.join([sep_, title, sep, dataset, type_str, loss_str, param_G_str, param_D_str, sep_])
     print(hdr)
 
 
@@ -110,9 +110,11 @@ def unnormalize(img):
     """Unnormalize image"""
 
     # mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
-    mean, std = [0.5] * 3, [0.5] * 3
-    return img.cpu().data * torch.Tensor(std).view(-1, 1, 1) + \
-        torch.Tensor(mean).view(-1, 1, 1)
+    #mean, std = [0.5] * 3, [0.5] * 3
+    #m = torch.Tensor(mean).view(-1, 1, 1)
+    #s = torch.Tensor(std).view(-1, 1, 1)
+    #return img.data.cpu() * s + m
+    return (img.data + 1) / 2.0
 
 
 class AvgMeter(object):

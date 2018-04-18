@@ -98,7 +98,7 @@ class CelebA(object):
 
         # Create fixed latent variables for inference while training
         self.latent_vars = []
-        for i in range(10):
+        for i in range(100):
             self.latent_vars.append(self.gan.create_latent_var(1))
 
 
@@ -114,6 +114,8 @@ class CelebA(object):
     def eval(self, n, epoch=None, while_training=False):
         """Sample examples from generator's distribution"""
 
+        self.gan.G.eval()
+        m = int(np.sqrt(n))
         # Predict images to see progress
         for i in range(n):
             # Reuse fixed latent variables to keep random process intact
@@ -121,10 +123,11 @@ class CelebA(object):
                 img = self.gan.generate_img(self.latent_vars[i])
             else:
                 img = self.gan.generate_img()
+            img = utils.unnormalize(img.squeeze())
             fname_in = '{}/test{:d}.png'.format(self.ckpt_path, i)
-            torchvision.utils.save_image(img.data, fname_in)
-        stack = 'montage {}/test* -tile x2 -geometry 64x64+1+1 \
-            {}/epoch'.format(self.ckpt_path, self.ckpt_path)
+            torchvision.utils.save_image(img, fname_in)
+        stack = 'montage {}/test* -tile {}x{} -geometry 64x64+1+1 \
+            {}/epoch'.format(self.ckpt_path, m, m, self.ckpt_path)
         stack = stack + str(epoch + 1) + '.png' if epoch is not None else stack + '.png'
         sp.call(stack.split())
         for f in glob.glob('{}/test*'.format(self.ckpt_path)):
@@ -143,6 +146,7 @@ class CelebA(object):
         #n_critic = 100 if g_iter < 25 or (g_iter + 1) % 500 == 0 else self.n_critic
         n_critic = self.n_critic
 
+
         # Train
         for epoch in range(nb_epochs):
             print('EPOCH {:d} / {:d}'.format(epoch + 1, nb_epochs))
@@ -152,6 +156,8 @@ class CelebA(object):
             avg_time_per_batch = utils.AvgMeter()
             # Mini-batch SGD
             for batch_idx, (x, _) in enumerate(data_loader):
+                self.gan.G.train()
+
                 if x.shape[0] != self.batch_size:
                     break
                 batch_start = datetime.datetime.now()
@@ -163,54 +169,45 @@ class CelebA(object):
                 if torch.cuda.is_available() and self.use_cuda:
                     x = x.cuda()
 
-                """
-                # leafs
-                bs = self.batch_size
-                z_dim = self.latent_dim
-                z = Variable(torch.randn(bs, z_dim))
-                z = z.unsqueeze(-1).unsqueeze(-1)
-                r_lbl = Variable(torch.ones(bs))
-                f_lbl = Variable(torch.zeros(bs))
-                if torch.cuda.is_available() and self.use_cuda:
-                    x = x.cuda()
-                    z = z.cuda()
-                    r_lbl = r_lbl.cuda()
-                    f_lbl = f_lbl.cuda()
-
-                f_imgs = self.gan.G(z)
-
-                # train D
-                bce = nn.BCEWithLogitsLoss()
-                r_logit = self.gan.D(x)
-                f_logit = self.gan.D(f_imgs.detach())
-                D_r_loss = bce(r_logit, r_lbl)
-                D_f_loss = bce(f_logit, f_lbl)
-                D_loss = D_r_loss + D_f_loss
-
-                self.gan.D.zero_grad()
-                D_loss.backward()
-                self.D_optimizer.step()
-
-                # train G
-                f_logit = self.gan.D(f_imgs)
-                G_loss = bce(f_logit, r_lbl)
-
-                self.gan.D.zero_grad()
-                self.gan.G.zero_grad()
-                G_loss.backward()
-                self.G_optimizer.step()
-                """
-
                 # Update discriminator
                 D_loss, fake_imgs = self.gan.train_D(x, self.D_optimizer, self.batch_size)
                 D_losses.update(D_loss, self.batch_size)
-                d_iter += 1
+                #d_iter += 1
 
                 # Update generator
                 if batch_idx % n_critic == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
                     G_losses.update(G_loss, self.batch_size)
-                    g_iter += 1
+                    #g_iter += 1
+                """
+                # leafs
+                z_dim = 100
+                bs = x.size(0)
+                z = Variable(torch.randn(bs, z_dim))
+                z = z.cuda()
+
+                f_imgs = self.gan.G(z)
+
+                # train D
+                r_logit = self.gan.D(x)
+                f_logit = self.gan.D(f_imgs.detach())
+                d_r_loss = torch.mean((r_logit - 1) ** 2)
+                d_f_loss = torch.mean(f_logit ** 2)
+                d_loss = d_r_loss + d_f_loss
+
+                self.gan.D.zero_grad()
+                d_loss.backward()
+                self.D_optimizer.step()
+
+                # train G
+                f_logit = self.gan.D(f_imgs)
+                g_loss = torch.mean((f_logit - 1) ** 2)
+
+                self.gan.D.zero_grad()
+                self.gan.G.zero_grad()
+                g_loss.backward()
+                self.G_optimizer.step()
+                """
 
                 batch_end = datetime.datetime.now()
                 batch_time = int((batch_end - batch_start).total_seconds() * 1000)
@@ -223,7 +220,7 @@ class CelebA(object):
                     D_all_losses.append(D_losses.avg)
                     utils.show_learning_stats(batch_idx, self.num_batches, G_losses.avg, D_losses.avg, avg_time_per_batch.avg)
                     [k.reset() for k in [G_losses, D_losses, avg_time_per_batch]]
-                    self.eval(10, epoch=epoch, while_training=True)
+                    self.eval(100, epoch=epoch, while_training=True)
 
                 # Save stats
                 if batch_idx % self.save_stats_interval == 0 and batch_idx:
@@ -234,7 +231,7 @@ class CelebA(object):
             utils.clear_line()
             print('Elapsed time for epoch: {}'.format(utils.time_elapsed_since(start_epoch)))
             self.gan.save_model(self.ckpt_path, epoch)
-            self.eval(10, epoch=epoch, while_training=True)
+            self.eval(100, epoch=epoch, while_training=True)
 
         # Print elapsed time
         elapsed = utils.time_elapsed_since(start)
@@ -262,7 +259,7 @@ if __name__ == '__main__':
     gan_params = {
         'gan_type': args.type,
         'latent_dim': 100,
-        'n_critic': 1
+        'n_critic': 3
     }
 
     # Training parameters (saving directory, learning rate, optimizer, etc.)
@@ -271,9 +268,9 @@ if __name__ == '__main__':
         'gen_dir': './../generated',
         'batch_size': 64,
         'train_len': 12800 if args.redux else 202599,
-        'learning_rate': 0.0002,
+        'learning_rate': 0.00005,
         'momentum': (0.5, 0.999),
-        'optim': 'adam',
+        'optim': 'rmsprop',
         'use_cuda': args.cuda
     }
 
