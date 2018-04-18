@@ -139,6 +139,9 @@ class CelebA(object):
         utils.format_hdr(self.gan, self.root_dir, self.train_len)
         start = datetime.datetime.now()
 
+        d_iter = self.n_critic
+        g_iter = 0
+
         # Train
         for epoch in range(nb_epochs):
             print('EPOCH {:d} / {:d}'.format(epoch + 1, nb_epochs))
@@ -159,12 +162,16 @@ class CelebA(object):
                 if torch.cuda.is_available() and self.use_cuda:
                     x = x.cuda()
 
-                # Update generator every n_critic we update discriminator
+                # Update discriminator
                 D_loss = self.gan.train_D(x, self.D_optimizer, self.batch_size)
-                if batch_idx % self.n_critic == 0:
+                D_losses.update(D_loss, self.batch_size)
+                d_iter += 1
+
+                # Update generator
+                if batch_idx % d_iter == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
                     G_losses.update(G_loss, self.batch_size)
-                D_losses.update(D_loss, self.batch_size)
+                    g_iter += 1
 
                 batch_end = datetime.datetime.now()
                 batch_time = int((batch_end - batch_start).total_seconds() * 1000)
