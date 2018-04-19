@@ -5,8 +5,8 @@ IFT6135: Representation Learning
 Assignment 4: Generative Models
 
 Authors:
-        Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
-        Joey Litalien <joey.litalien@umontreal.ca>
+    Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
+    Joey Litalien <joey.litalien@umontreal.ca>
 """
 
 from __future__ import print_function
@@ -23,30 +23,34 @@ import datetime
 
 def clear_line():
     """Clear line from any characters"""
-    print("\r{}".format(" " * 80), end="\r")
+    print('\r{}'.format(' ' * 80), end='\r')
 
 
 def format_hdr(gan, root_dir, training_len):
     """Print type of GAN with number of parameters"""
+
     num_params_D, num_params_G = gan.get_num_params()
-    loss = gan.loss
-    if gan.loss is "og":
-        gan_type = "Deep convolutional GAN (DCGAN)"
-        gan_loss = "min_G max_D  E_x[log D(x)] + E_z[1 - log D(G(x))]"
-    elif gan.loss is "wasserstein":
-        gan_type = "Wasserstein GAN (WGAN)"
-        gan_loss = "min_G max_D  E_x[D(x)] - E_z[D(G(x))]"
+    if gan.gan_type == 'gan':
+        gan_type = 'Deep convolutional GAN (DCGAN)'
+        gan_loss = 'min_G max_D  E_x[log D(x)] + E_z[log (1 - D(G(z)))]'
+    elif gan.gan_type == 'wgan':
+        gan_type = 'Wasserstein GAN (WGAN)'
+        gan_loss = 'min_G max_D  E_x[D(x)] - E_z[D(G(z))]'
+    elif gan.gan_type == 'lsgan':
+        gan_type = 'Least Squares GAN (LSGAN)'
+        gan_loss = 'min_G max_D  E_x[(D(x) - 1)^2] - E_z[D(G(z))^2]'
     else:
-        gan_type = "Unknown"
-        gan_loss = "Unknown"
-    title = "Generative Adversarial Network (GAN)".center(80)
-    sep, sep_ = 80 * "-", 80 * "="
-    type_str = "Type: {}".format(gan_type)
-    loss_str = "Loss: {}".format(gan_loss)
-    param_D_str = "Nb of generator params: {:,}".format(num_params_D)
-    param_G_str = "Nb of discriminator params: {:,}".format(num_params_G)
-    dataset = "Training on CelebA dataset ({}) with {:,} faces".format(root_dir, training_len)
-    hdr = "\n".join([sep_, title, sep, dataset, type_str, loss_str, param_D_str, param_G_str, sep_])
+
+        gan_type = 'Unknown'
+        gan_loss = 'Unknown'
+    title = 'Generative Adversarial Network (GAN)'.center(80)
+    sep, sep_ = 80 * '-', 80 * '='
+    type_str = 'Type: {}'.format(gan_type)
+    loss_str = 'Loss: {}'.format(gan_loss)
+    param_D_str = 'Nb of generator params: {:,}'.format(num_params_D)
+    param_G_str = 'Nb of discriminator params: {:,}'.format(num_params_G)
+    dataset = 'Training on CelebA dataset ({}) with {:,} faces'.format(root_dir, training_len)
+    hdr = '\n'.join([sep_, title, sep, dataset, type_str, loss_str, param_G_str, param_D_str, sep_])
     print(hdr)
 
 
@@ -63,7 +67,7 @@ def progress_bar(batch_idx, report_interval, G_loss, D_loss):
     bar_size = 24
     progress = (((batch_idx - 1) % report_interval) + 1) / report_interval
     fill = int(progress * bar_size)
-    print("\rBatch {:>4d} [{}{}] G loss: {:>7.4f} | D loss: {:>7.4f}".format(batch_idx, "=" * fill, " " * (bar_size - fill), G_loss, D_loss), end="")
+    print('\rBatch {:>4d} [{}{}] G loss: {:>7.4f} | D loss: {:>7.4f}'.format(batch_idx, '=' * fill, ' ' * (bar_size - fill), G_loss, D_loss), end='')
 
 
 def show_learning_stats(batch_idx, num_batches, g_loss, d_loss, elapsed):
@@ -71,7 +75,7 @@ def show_learning_stats(batch_idx, num_batches, g_loss, d_loss, elapsed):
 
     clear_line()
     dec = str(int(np.ceil(np.log10(num_batches))))
-    print("Batch {:>{dec}d} / {:d} | G loss: {:>7.4f} | D loss: {:>7.4f} | Avg time / batch: {:d} ms".format(batch_idx, num_batches, g_loss, d_loss, int(elapsed), dec=dec))
+    print('Batch {:>{dec}d} / {:d} | G loss: {:>7.4f} | D loss: {:>7.4f} | Avg time / batch: {:d} ms'.format(batch_idx, num_batches, g_loss, d_loss, int(elapsed), dec=dec))
 
 
 def compute_mean_std(data_loader):
@@ -83,11 +87,11 @@ def compute_mean_std(data_loader):
         means += torch.Tensor([torch.mean(x[i]) for i in range(3)])
         stds += torch.Tensor([torch.std(x[i]) for i in range(3)])
         if batch_idx % 1000 == 0 and batch_idx:
-            print("{:d} images processed".format(batch_idx))
+            print('{:d} images processed'.format(batch_idx))
 
     mean = torch.div(means, len(data_loader.dataset))
     std = torch.div(stds, len(data_loader.dataset))
-    print("Mean = {}\nStd = {}".format(mean.tolist(), std.tolist()))
+    print('Mean = {}\nStd = {}'.format(mean.tolist(), std.tolist()))
     return mean, std
 
 
@@ -107,9 +111,11 @@ def unnormalize(img):
     """Unnormalize image"""
 
     # mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
-    mean, std = [0.5] * 3, [0.5] * 3
-    return img.cpu().data * torch.Tensor(std).view(-1, 1, 1) + \
-            torch.Tensor(mean).view(-1, 1, 1)
+    #mean, std = [0.5] * 3, [0.5] * 3
+    #m = torch.Tensor(mean).view(-1, 1, 1)
+    #s = torch.Tensor(std).view(-1, 1, 1)
+    #return img.data.cpu() * s + m
+    return (img.data + 1) / 2.0
 
 
 class AvgMeter(object):

@@ -125,12 +125,28 @@ $D/G$ updates ratio & $n_{\textsf{critic}}$ & 1 & 5 \\
 
 These parameters are the ones suggested by the original authors and tested on the LSUN dataset. We experimented with different values (\textit{e.g.} Adam for WGAN) but GANs being incredibly hard to train however, we settled for these values. Theoretically, the discriminator in a WGAN should be fully converged to get the best estimate of the Wasserstein distance, but in practice this does not work so well. Hence, if $G_\textsf{iter}$ is the number of times $G$ has been updated so far in the training, we started at $n_\textsf{critic} = 20$ for $G_\textsf{iter} < 50$ (1000 minibatches), or whenever $G_\textsf{iter}+1 \pmod{500} = 0$. This number is reduced to 5 otherwise. This is rather arbitrary but somewhat follows the heuristic described by Arjovsky himself on his \href{https://github.com/martinarjovsky/wassersteingan}{GitHub repo} of the original WGAN.
 
-The dataset contains 202\,599 RGB images of size $3 \times 64 \times 64$. These faces were first normalized and fed into our networks in minibatches of size 64. To train these models, we provided Shell scripts that accept a number of arguments for the optimizers, learning rate, CUDA switch, RNG seed (for debugging), and much more. These are located in \code{src/train}.
+The dataset contains 202\,599 RGB images of size $3 \times 64 \times 64$. These faces were first normalized and fed into our networks in minibatches of size 64. To train these models, we provided Shell scripts that accept a number of arguments for the optimizers, learning rate, CUDA switch, RNG seed (for debugging), and much more. These are located in \code{src/train}. Below are the training times for our models.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{l c c c}
+\Xhline{2\arrayrulewidth}
+Model & Training time & Avg epoch time & Avg batch time \\
+\hline
+Vanilla GAN & 3 hrs 34 mins & 4 mins 15 s & 56 ms  \\
+WGAN & 2 hrs 38 mins & 3 mins 9 s & 35 ms \\
+\Xhline{2\arrayrulewidth}
+\end{tabular}
+\caption{Training our vanilla GAN and Wassterstein GAN on an NVIDIA GTX 1080.}
+\end{table}
+
+Animations of the 50 epochs with fixed latent variables can be found in \code{src/checkpoints} under each model's \code{video} folder.
 
 \subsection{Increasing the Feature Map Size}
 
 To illustrate the three upsampling schemes, we reuse a toy example from \cite{odena2016deconvolution}.
 
+\newpage
 \begin{figure}[ht]
   \centering
   \begin{tikzpicture}[scale=0.8, semithick]
@@ -268,13 +284,23 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
 \subsection{DCGAN vs. WGAN Visual Comparison}
 \begin{figure}[ht]
   \centering
+  \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.5]{imgs/latent_explore}
-    \caption{Comparing our vanilla GAN (\textit{top}) with its Wasserstein counterpart (\textit{bottom}).}
+    \includegraphics[scale=0.5]{imgs/gan_examples}
+    \caption{Vanilla GAN}
+  \end{subfigure}
+
+  \vspace*{3mm}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/wgan_examples}
+    \caption{WGAN}
+  \end{subfigure}
+  \caption{Comparing our vanilla GAN (\textit{top}) with its Wasserstein counterpart (\textit{bottom}). More images can be found in the Appendix.}
     \label{compare}
 \end{figure}
 
-\fbox{Discuss}
+\fbox{\color{red}TODO}
 
 
 \subsection{Latent Space Exploration}
@@ -283,14 +309,14 @@ To explore the face manifold in latent space, we iterated over all $10^2$ dimens
   \centering
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.5]{imgs/latent_explore}
+    \includegraphics[scale=0.5]{imgs/gan_latent_play}
     \caption{Vanilla GAN}
   \end{subfigure}
 
   \vspace*{3mm}
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.5]{imgs/latent_explore}
+    \includegraphics[scale=0.5]{imgs/wgan_latent_play}
     \caption{WGAN}
   \end{subfigure}
   \caption{Changing a single dimension in latent space for different generative models. Original face $\*x = G(\*z)$ is the left-most image.}
@@ -311,13 +337,17 @@ Interpolating in screen space (Fig. \ref{screen_lerp}) obviously gave very poor 
   \vspace*{3mm}
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.5]{imgs/gan_screen_lerp}
+    \includegraphics[scale=0.5]{imgs/wgan_screen_lerp}
     \caption{WGAN}
   \end{subfigure}
   \caption{Interpolating in screen space for different generative models. Each image is generated using two fixed latent variables and computing $\*x' = \alpha \*x_0 + (1-\alpha)\*x_1, \ \alpha \in [0,1]$.}
   \label{screen_lerp}
 \end{figure}
 
+% WGAN: Seed 5 35
+% 86 112
+% 140 186
+% 229 278
 Interpolating in latent space (Fig. \ref{latent_lerp}), however, gives pleasant results. Indeed, any $\*z'$ seems to yield a plausible celebrity face. This is because when we interpolate the latent variables, we ``walk" on the face manifold of $G$ and so any value should somewhat give a realistic face.
 
 To better visualize the interpolation process, we created looping GIFs (and MP4 videos to avoid compression artifacts) over 50 frames (\textit{i.e.} $\alpha = i/50$). These are located in the \code{explore/screen\_space} and \code{explore/latent\_space} directories of the project source. You can create an interpolating sequence between two random seeds by running the provided Python script with a pretrained generative model. A series of arguments such as model type and number of frames can be specified. For more info, simply run the program with the help flag.
@@ -333,7 +363,7 @@ To better visualize the interpolation process, we created looping GIFs (and MP4 
   \vspace*{3mm}
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.5]{imgs/gan_latent_lerp}
+    \includegraphics[scale=0.5]{imgs/wgan_latent_lerp}
     \caption{WGAN}
   \end{subfigure}
   \caption{Interpolating in latent space for different generative models. Each image is generated using a different latent variable $\*z' = \alpha \*z_0 + (1-\alpha)\*z_1, \ \alpha \in [0,1]$.}
@@ -342,15 +372,51 @@ To better visualize the interpolation process, we created looping GIFs (and MP4 
 
 \section{Quantitative Evaluations}
 \subsection{Results for Inception and Mode Score}
-\subsection{Discussion on Scoring Methods}
+\fbox{\color{red}TODO}
 
+\subsection{Discussion on Scoring Methods}
+\fbox{\color{red}TODO}
+
+\newpage
 \bibliography{refs}
 \bibliographystyle{iclr2017_conference}
 
+\newpage
 \appendix
 \section{Generated Examples}
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.4]{imgs/gan_epoch50}
+    \caption{Vanilla GAN}
+  \end{subfigure}
 
+  \vspace*{3mm}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.4]{imgs/wgan_epoch50}
+    \caption{WGAN}
+  \end{subfigure}
+  \caption{100 generated images using both models trained for 50 epochs. All images look more or less plausible, with no mode collapse.}
+\end{figure}
 
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.4]{imgs/lsgan_epoch44}
+    \caption{LSGAN after 44 epochs}
+  \end{subfigure}
+
+  \vspace*{3mm}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.4]{imgs/lsgan_epoch50}
+    \caption{LSGAN after 50 epochs}
+  \end{subfigure}
+  \caption{100 generated images using our trained LSGAN using the same hyperparameters as the vanilla GAN. Total mode collapse occurs at the end of training time.}
+\end{figure}
 
 
 \end{document}
