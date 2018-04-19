@@ -289,7 +289,7 @@ if __name__ == "__main__":
         torchvision.utils.save_image(img, fname_in)
         for i in range(100):
             z1 = z0.clone()
-            z = z1[0, i, :, :].data[0][0] 
+            z = z1[0, i, :, :].data[0][0]
             z1[0, i, :, :] = -np.sign(z) * 3
             print("i={:2d}, z={:2.4f}".format(i, z))
             img = gan.gan.generate_img(z1)
@@ -303,3 +303,4 @@ if __name__ == "__main__":
     #     img = utils.unnormalize(img)
     #     fname = "../generated/test{:d}.png".format(i)
     #     torchvision.utils.save_image(img, fname)
+

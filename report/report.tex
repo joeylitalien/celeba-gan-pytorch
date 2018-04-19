@@ -25,10 +25,17 @@
 \usepackage{colortbl}
 \usepackage{hhline}
 \usepackage[labelfont=bf,labelsep=period]{caption}
+\usetikzlibrary{matrix}
 
 \newcommand{\thickhline}{%
     \noalign {\ifnum 0=`}\fi \hrule height 1pt
     \futurelet \reserved@a \@xhline
+}
+
+\def\IsEven#1{%
+      TT\fi
+     \pgfmathparse{int(mod(#1,2))}%
+     \ifnum\pgfmathresult=0
 }
 
 \lhead{\textsc{IFT6135 Representation Learning}}
@@ -54,26 +61,27 @@ Prof. Aaron Courville \\
 
 \section{Overview}
 
-For this assignment, we chose to implement a Generative Adversarial Network (GAN) in PyTorch. The variant we used for comparison is a Wasserstein GAN (WGAN). The class \code{DCGAN} implements a Deep Convolutional GAN and contains both a \code{Discriminator} $D$ and \code{Generator} $G$. Both entities can be trained independently using the methods \code{DCGAN.train\_*}, meaning that we can customize the order in which we train the models. These training routines implement two types of loss functions: the original minmax loss from Goodfellow (2014), and the Wasserstein version from Arjovsky (2017). Every hyperparameters related to training like $D$'s and $G$'s optimizers are set in \code{CelebA}, a wrapper class for the generative task at hand.
+For this assignment, we chose to implement a Generative Adversarial Network (GAN) as first introduced by \cite{gan} in PyTorch. The variant we used for comparison is a Wasserstein GAN (WGAN) from \cite{wgan}. The class \code{DCGAN} implements a Deep Convolutional GAN and contains both a \code{Discriminator} $D$ and \code{Generator} $G$. Both entities can be trained independently using the methods \code{DCGAN.train\_*}, meaning that we can customize the number of times we update each model. These training routines implement three types of loss functions: the original minmax loss, the Wasserstein loss and the least squares lost from \cite{lsgan}. The last GAN type will not be evaluated in this assignment, but generated images from an LSGAN are available in the Appendix.
 
-To load a pre-trained model, simply instantiate \code{CelebA} with the default parameters, load the model weights and call \code{DCGAN.generate\_img()}. If no arguments is passed, the GAN will sample a random latent variable $\*z$ and return a generated image. This function also accepts a latent variable generated from a fixed RNG seed.
+Every hyperparameters related to training like $D$'s and $G$'s optimizers are set in \code{CelebA}, a wrapper class for the generative task at hand. To load a pre-trained generative model and sample images from its distribution, simply run \code{src/gen.py} with the PyTorch weights file, the model type and the desired number of images. The exact semantic can be found by running the script with the help flag.
+
+%If no arguments is passed, the GAN will sample a random latent variable $\*z$ and return a generated image. This function also accepts a latent variable generated from a fixed RNG seed.
 
 \section{Architecture}
-\subsection{DCGAN}
+\subsection{Training the Networks}
 
-We reused the DCGAN architecture from Radford (2015) to build our vanilla GAN. The architectures for the discriminator and generator are given in the tables below. The last three columns are kernel size, stride and padding, respectively.
+We took inspiration from the DCGAN architecture from \cite{dcgan} to build our two GANs. The architectures for the discriminator and generator are given in the tables below, and are used on both our vanilla DCGAN and our WGAN. The middle columns are kernel size $(k)$, stride $(s)$ and zero-padding $(p)$, respectively.
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{c c ccc c c c}
 \Xhline{2\arrayrulewidth}
-In & Out & Module & Normalization & Activation & $k$ & $s$ & $p$ \\
+In & Out & Module & $k$ & $s$ & $p$ & Normalization & Activation \\
 \hline
-100 & 1024 &Deconv2D & BatchNorm2D & ReLU & $4 \times 4$ & 1 & 0 \\
-1024 & 512 &Deconv2D & BatchNorm2D & ReLU & $4 \times 4$ & 2 & 1 \\
-12 & 256 &Deconv2D & BatchNorm2D & ReLU & $4 \times 4$ & 2 & 1 \\
-128 & 128 &Deconv2D & BatchNorm2D & ReLU & $4 \times 4$ & 2 & 1 \\
-28 & 3 &Deconv2D & --- & Tanh & $4 \times 4$ & 2 & 1 \\
+100 & 512 &Linear + Reshape &&&& BatchNorm1D & ReLU \\
+512 & 256 &ConvTranspose2D & 4 & 2 & 1 & BatchNorm2D & ReLU  \\
+128 & 64 &ConvTranspose2D & 4 & 2 & 1 & BatchNorm2D & ReLU  \\
+64 & 3 &ConvTranspose2D & 4 & 2 & 1 & None & Tanh\\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
 \caption{DCGAN Generator architecture.}
@@ -83,80 +91,264 @@ In & Out & Module & Normalization & Activation & $k$ & $s$ & $p$ \\
 \centering
 \begin{tabular}{c c ccc c c c}
 \Xhline{2\arrayrulewidth}
-In & Out & Module & Normalization & Activation & $k$ & $s$ & $p$ \\
+In & Out & Module & $k$ & $s$ & $p$ & Normalization & Activation  \\
 \hline
-3 & 128 &Conv2D & --- & LeakyReLU(0.2) & $4 \times 4$ & 2 & 1 \\
-128 & 256 &Conv2D & BatchNorm2D & LeakyReLU(0.2) & $4 \times 4$ & 2 & 1 \\
-256 & 512 &Conv2D & BatchNorm2D & LeakyReLU(0.2) & $4 \times 4$ & 2 & 1 \\
-512 & 1024 &Conv2D & BatchNorm2D & LeakyReLU(0.2) & $4 \times 4$ & 2 & 1 \\
-1024 & 1 & Conv2D & BatchNorm2D & Sigmoid & $4 \times 4$ & 1 & 0 \\
+3 & 64 &Conv2D & 4 & 2 & 1 & None & LeakyReLU \\
+64 & 128 &Conv2D & 4 & 2 & 1 & BatchNorm2D & LeakyReLU \\
+128 & 256 &Conv2D & 4 & 2 & 1 & BatchNorm2D & LeakyReLU \\
+256 & 512 &Conv2D & 4 & 2 & 1 & BatchNorm2D & LeakyReLU \\
+512 & 1 & Conv2D & 4 & 1 & 0& None & None \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
 \caption{DCGAN Discriminator architecture.}
 \end{table}
 
-As suggested in the paper, we did not apply batchnorm to $G$'s output layer and $D$'s input layer to avoid sample oscillation and model instability.
+As suggested in the paper, we did not apply batchnorm to $G$'s output layer and $D$'s input layer to avoid sample oscillation and model instability. The latent variable is first project to a $512 \times 4 \times 4 = 8192$-dimensional vector using a dense layer and then reshaped to a volume of $512 \times 4 \times 4$ for the first fractionally-strided convolution. We used a kernel size of 4 instead of 5 and removed all biases in the generator network to speed up the computations.
 
 We further detail our choice of hyperparameters as follows.
 
 
 \begin{table}[ht]
 \centering
-\begin{tabular}{l C{1.5cm} c}
+\begin{tabular}{l C{1.5cm} c c}
 \Xhline{2\arrayrulewidth}
-Hyperparameter & Symbol & Value \\
+Hyperparameter & Symbol & DCGAN & WGAN \\
 \hline
-Learning rate & $\alpha$ & 0.0002 \\
-Momentum & $\beta, \beta^2$ & 0.5, 0.999\\
-SGD Optimizers & --- & Adam \\
-$D/G$ updates ratio & $n_{\textsf{critic}}$ & 3:1 \\
-\hline
-Image size & $d$ & $3 \times 64 \times 64$ \\
-Training size & $N$ & 202,599\\
-Batch size & $b$ & 128 \\
+Learning rate & $\alpha$ & $2 \times 10^{-4}$ & $5 \times 10^{-5}$ \\
+Momentum & $\beta, \beta^2$ & 0.5, 0.999 & None \\
+SGD Optimizers & --- & Adam  & RMSProp \\
+$D/G$ updates ratio & $n_{\textsf{critic}}$ & 1 & 5 \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{DCGAN Choice of hyperparameters.}
+\caption{Training hyperparameters for DCGAN and WGAN.}
 \end{table}
 
+These parameters are the ones suggested by the original authors and tested on the LSUN dataset. We experimented with different values (\textit{e.g.} Adam for WGAN) but GANs being incredibly hard to train however, we settled for these values. Theoretically, the discriminator in a WGAN should be fully converged to get the best estimate of the Wasserstein distance, but in practice this does not work so well. Hence, if $G_\textsf{iter}$ is the number of times $G$ has been updated so far in the training, we started at $n_\textsf{critic} = 20$ for $G_\textsf{iter} < 50$ (1000 minibatches), or whenever $G_\textsf{iter}+1 \pmod{500} = 0$. This number is reduced to 5 otherwise. This is rather arbitrary but somewhat follows the heuristic described by Arjovsky himself on his \href{https://github.com/martinarjovsky/wassersteingan}{GitHub repo} of the original WGAN.
+
+The dataset contains 202\,599 RGB images of size $3 \times 64 \times 64$. These faces were first normalized and fed into our networks in minibatches of size 64. To train these models, we provided Shell scripts that accept a number of arguments for the optimizers, learning rate, CUDA switch, RNG seed (for debugging), and much more. These are located in \code{src/train}.
+
 \subsection{Increasing the Feature Map Size}
+
+To illustrate the three upsampling schemes, we reuse a toy example from \cite{odena2016deconvolution}.
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.8, semithick]
+    \def\x{5}
+    \def\y{2.5}
+    % Beams
+    \foreach \xi in {3,5,7}
+      \fill[blue, opacity=0.2] (\xi, \y) -- (\xi+1, 0.5) -- (\xi-2, 0.5) -- (\xi-1, \y);
+    % Side beams
+    \fill[blue, opacity=0.2] (1, \y) -- (2, 0.5) -- (0, 0.5) -- (0, \y);
+    \fill[blue, opacity=0.2] (8, \y) -- (7, 0.5) -- (9, 0.5) -- (9, \y);
+    % Pixels
+    \foreach \xi[count=\i] in {0,...,8}{
+      \if\IsEven{\i}
+        \draw[draw=black, fill=gray!75] (\xi,0) rectangle ++(1,0.5);
+        \draw[draw=black] (\xi,\y) rectangle ++(1,0.5);
+      \else
+        \draw[draw=black, fill=gray!25] (\xi,0) rectangle ++(1,0.5);
+        \draw[draw=black, fill=gray!75] (\xi,\y) rectangle ++(1,0.5);
+      \fi
+    }
+    % Matrix
+    \def\d{-0.75}
+    \def\e{0.5}
+    \node at (1.8+\e,\d) {$a$};
+    \node at (4+\e,\d) {$c$};
+    \node at (4+\e,2*\d) {$b$};
+    \node at (4+\e,3*\d) {$b$};
+    \node at (6.2+\e,3*\d) {$c$};
+    \node at (6.2+\e,4*\d) {$b$};
+    \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
+    \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
+  \end{tikzpicture}
+  \caption{Fractionally-strided convolution.}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.8, semithick, >=stealth']
+    \def\x{5}
+    \def\y{2.5}
+    % Beams
+    \foreach \xi in {2,...,8}
+      \fill[blue, opacity=0.2] (\xi, \y) -- (\xi+1, 0.5) -- (\xi-2, 0.5) -- (\xi-1, \y);
+    % Side beams
+    \fill[blue, opacity=0.2] (1, \y) -- (2, 0.5) -- (0, 0.5) -- (0, \y);
+    \fill[blue, opacity=0.2] (8, \y) -- (7, 0.5) -- (9, 0.5) -- (9, \y);
+    % Pixels
+    \foreach \xi[count=\i] in {0,...,8}{
+      \if\IsEven{\i}
+        \draw[draw=black, fill=gray!25] (\xi,\y) rectangle ++(1,0.5);
+      \else
+        \draw[draw=black, fill=gray!25] (\xi,0) rectangle ++(1,0.5);
+        \draw[draw=black, fill=gray!75] (\xi,\y) rectangle ++(1,0.5);
+      \fi
+    }
+    % Bottom dark
+    \foreach \xi[count=\i] in {1,...,7}{
+      \draw[draw=black, fill=gray!75] (\xi,0) rectangle ++(1,0.5);
+    }
+    % Arrows
+    \foreach \xi[count=\i] in {0,2,4,6}{
+      \draw[->] (\xi+0.75, \y+0.25) -- (\xi+1.3, \y+0.25);
+    }
+    % Matrix
+    \def\d{-0.75}
+    \def\e{0.5}
+    \node at (1.5+\e,\d) {$a+b$};
+    \node at (1.5+\e,2*\d) {$a$};
+    \node at (4+\e,\d) {$c$};
+    \node at (4+\e,2*\d) {$b+c$};
+    \node at (4+\e,3*\d) {$a+b$};
+    \node at (4+\e,4*\d) {$a$};
+    \node at (6.5+\e,3*\d) {$c$};
+    \node at (6.5+\e,4*\d) {$b+c$};
+    \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
+    \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
+  \end{tikzpicture}
+  \caption{Nearest neighbor convolution.}
+\end{figure}
+
+
+\begin{figure}[ht]
+  \centering
+  \begin{tikzpicture}[scale=0.8, semithick, >=stealth']
+    \def\x{5}
+    \def\y{2.5}
+    % Beams
+    \foreach \xi in {2,...,8}
+      \fill[blue, opacity=0.2] (\xi, \y) -- (\xi+1, 0.5) -- (\xi-2, 0.5) -- (\xi-1, \y);
+    % Side beams
+    \fill[blue, opacity=0.2] (1, \y) -- (2, 0.5) -- (0, 0.5) -- (0, \y);
+    \fill[blue, opacity=0.2] (8, \y) -- (7, 0.5) -- (9, 0.5) -- (9, \y);
+    % Pixels
+    \foreach \xi[count=\i] in {0,...,8}{
+      \if\IsEven{\i}
+        \draw[draw=black, fill=gray!25] (\xi,\y) rectangle ++(1,0.5);
+      \else
+        \draw[draw=black, fill=gray!25] (\xi,0) rectangle ++(1,0.5);
+        \draw[draw=black, fill=gray!75] (\xi,\y) rectangle ++(1,0.5);
+      \fi
+    }
+    % Bottom dark
+    \foreach \xi[count=\i] in {1,...,7}{
+      \draw[draw=black, fill=gray!75] (\xi,0) rectangle ++(1,0.5);
+    }
+    % Arrows
+    \foreach \xi[count=\i] in {0,2,4,6}{
+      \draw[->] (\xi+0.75, \y+0.25) -- (\xi+1.3, \y+0.25);
+    }
+    \foreach \xi[count=\i] in {1,3,5,7}{
+      \draw[->] (\xi+1.25, \y+0.25) -- (\xi+0.7, \y+0.25);
+    }
+    % Matrix
+    \def\d{-0.75}
+    \def\e{0.5}
+    \node at (0.5+\e,\d) {\small$a+\frac{1}{2}b$};
+    \node at (0.5+\e,2*\d) {\small$\frac{1}{2}a$};
+    \node at (2.75+\e,\d) {\small$\frac{1}{2}b + c$};
+    \node at (2.75+\e,2*\d) {\small$\frac{1}{2}a + b + \frac{1}{2}c$};
+    \node at (2.75+\e,3*\d) {\small$a+\frac{1}{2}b$};
+    \node at (2.75+\e,4*\d) {\small$\frac{1}{2}a$};
+    \node at (5.25+\e,3*\d) {\small$\frac{1}{2}b+c$};
+    \node at (5.25+\e,2*\d) {\small$\frac{1}{2}c$};
+    \node at (5.25+\e,4*\d) {\small$\frac{1}{2}a + b+\frac{1}{2}c$};
+    \node at (7.5+\e,4*\d) {\small$\frac{1}{2}c$};
+    \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
+    \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
+  \end{tikzpicture}
+  \caption{Bilinear resize convolution.}
+\end{figure}
 
 \newpage
 \section{Qualitative Evaluations}
 \subsection{DCGAN vs. WGAN Visual Comparison}
+\begin{figure}[ht]
+  \centering
+    \centering
+    \includegraphics[scale=0.5]{imgs/latent_explore}
+    \caption{Comparing our vanilla GAN (\textit{top}) with its Wasserstein counterpart (\textit{bottom}).}
+    \label{compare}
+\end{figure}
+
+\fbox{Discuss}
 
 
 \subsection{Latent Space Exploration}
-To explore the face manifold in latent space, we iterated over all $10^2$ dimensions of two given $\*z$'s and changed the value to $\pm 3\sigma^2 = \pm 3$ to amplify the signal. We selected the dimensions we thought gave the most notable differences. Among the visual variations we observed are open/close mouth, skin color, hair fringe, hair colour, cheek and jaw shape, background, and gender changes. Interestingly, we also have a semblance of face orientation change in the woman case (first and fourth from the right).
+To explore the face manifold in latent space, we iterated over all $10^2$ dimensions of two given $\*z$'s and changed the value to $\pm 3\sigma^2 = \pm 3$ to amplify the signal. We selected the dimensions we thought gave the most notable differences and plot them (Fig. \ref{latent_explore}). Among the visual variations we observed are open/close mouth, skin color, hair fringe, hair colour, cheek and jaw shape, background, and gender changes. Interestingly, we also have a semblance of face orientation change in the woman case (first and fourth from the right).
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\textwidth]{imgs/latent_explore}
-  \caption{DCGAN: Changing a single dimension in latent space. Original face $\*x = G(\*z)$ is the left-most image.}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/latent_explore}
+    \caption{Vanilla GAN}
+  \end{subfigure}
+
+  \vspace*{3mm}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/latent_explore}
+    \caption{WGAN}
+  \end{subfigure}
+  \caption{Changing a single dimension in latent space for different generative models. Original face $\*x = G(\*z)$ is the left-most image.}
+  \label{latent_explore}
 \end{figure}
 
 \subsection{Screen and Latent Space Interpolation}
-Interpolating in screen space (Figure \ref{screen_lerp}) obviously gave very poor results as we simply interpolate between pixels and completely disregard the underlying structure of the generator $G$. Only the first and last images look like actual human faces; anything in the middle has ghosting artifacts since it is just a blend of RGB channels.
+Interpolating in screen space (Fig. \ref{screen_lerp}) obviously gave very poor results as we simply interpolate between pixels and completely disregard the underlying structure of the generator $G$. Only the first and last images look like actual human faces; anything in the middle has ghosting artifacts since it is just a blend of RGB channels.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\textwidth]{imgs/gan_screen_lerp}
-  \caption{DCGAN: Interpolating in screen space: $\*x' = \alpha \*x_0 + (1-\alpha)\*x_1, \ \alpha \in [0,1]$.}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/gan_screen_lerp}
+    \caption{Vanilla GAN}
+  \end{subfigure}
+
+  \vspace*{3mm}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/gan_screen_lerp}
+    \caption{WGAN}
+  \end{subfigure}
+  \caption{Interpolating in screen space for different generative models. Each image is generated using two fixed latent variables and computing $\*x' = \alpha \*x_0 + (1-\alpha)\*x_1, \ \alpha \in [0,1]$.}
   \label{screen_lerp}
 \end{figure}
 
-Interpolating in latent space (Figure \ref{latent_lerp}), however, gives pleasant results. Indeed, any $\*z'$ seems to yield a plausible celebrity face. This is because when we interpolate the latent variables, we ``walk" on the face manifold of $G$ and so any value should somewhat give a realistic face.
+Interpolating in latent space (Fig. \ref{latent_lerp}), however, gives pleasant results. Indeed, any $\*z'$ seems to yield a plausible celebrity face. This is because when we interpolate the latent variables, we ``walk" on the face manifold of $G$ and so any value should somewhat give a realistic face.
 
-To better visualize the interpolation process, we created looping GIFs (and MP4 videos to avoid compression artifacts) over 50 frames (\textit{i.e.} $\alpha = i/50$). These are located in the \code{explore/screen\_space} and \code{explore/latent\_space} directories of the project source.
-
+To better visualize the interpolation process, we created looping GIFs (and MP4 videos to avoid compression artifacts) over 50 frames (\textit{i.e.} $\alpha = i/50$). These are located in the \code{explore/screen\_space} and \code{explore/latent\_space} directories of the project source. You can create an interpolating sequence between two random seeds by running the provided Python script with a pretrained generative model. A series of arguments such as model type and number of frames can be specified. For more info, simply run the program with the help flag.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\textwidth]{imgs/gan_latent_lerp}
-  \caption{DCGAN: Interpolating in latent space: $\*z' = \alpha \*z_0 + (1-\alpha)\*z_1, \ \alpha \in [0,1]$.}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/gan_latent_lerp}
+    \caption{Vanilla GAN}
+  \end{subfigure}
+
+  \vspace*{3mm}
+  \begin{subfigure}{\textwidth}
+    \centering
+    \includegraphics[scale=0.5]{imgs/gan_latent_lerp}
+    \caption{WGAN}
+  \end{subfigure}
+  \caption{Interpolating in latent space for different generative models. Each image is generated using a different latent variable $\*z' = \alpha \*z_0 + (1-\alpha)\*z_1, \ \alpha \in [0,1]$.}
   \label{latent_lerp}
 \end{figure}
 
 \section{Quantitative Evaluations}
+\subsection{Results for Inception and Mode Score}
+\subsection{Discussion on Scoring Methods}
+
+\bibliography{refs}
+\bibliographystyle{iclr2017_conference}
+
+\appendix
+\section{Generated Examples}
 
 
 

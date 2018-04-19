@@ -5,8 +5,8 @@ IFT6135: Representation Learning
 Assignment 4: Generative Models
 
 Authors:
-	Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
-	Joey Litalien <joey.litalien@umontreal.ca>
+        Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
+        Joey Litalien <joey.litalien@umontreal.ca>
 """
 
 from __future__ import print_function
@@ -38,7 +38,7 @@ def format_hdr(gan, root_dir, training_len):
         gan_loss = "min_G max_D  E_x[D(x)] - E_z[D(G(x))]"
     else:
         gan_type = "Unknown"
-        gan_loss = "Unkown"
+        gan_loss = "Unknown"
     title = "Generative Adversarial Network (GAN)".center(80)
     sep, sep_ = 80 * "-", 80 * "="
     type_str = "Type: {}".format(gan_type)
@@ -98,7 +98,7 @@ def load_dataset(root_dir, batch_size):
     mean, std = [0.5] * 3, [0.5] * 3
     normalize = transforms.Normalize(mean=mean, std=std)
     train_data = ImageFolder(root=root_dir,
-       transform=transforms.Compose([transforms.ToTensor(), normalize]))
+            transform=transforms.Compose([transforms.ToTensor(), normalize]))
     data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     return data_loader
 
@@ -109,7 +109,7 @@ def unnormalize(img):
     # mean, std = [0.5066, 0.4261, 0.3836], [0.2589, 0.2380, 0.2340]
     mean, std = [0.5] * 3, [0.5] * 3
     return img.cpu().data * torch.Tensor(std).view(-1, 1, 1) + \
-        torch.Tensor(mean).view(-1, 1, 1)
+            torch.Tensor(mean).view(-1, 1, 1)
 
 
 class AvgMeter(object):
