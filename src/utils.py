@@ -17,6 +17,12 @@ from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
+import matplotlib
+matplotlib.use('agg')
+from matplotlib import rcParams
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = ['Arial']
+import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 
@@ -116,6 +122,35 @@ def unnormalize(img):
     #s = torch.Tensor(std).view(-1, 1, 1)
     #return img.data.cpu() * s + m
     return (img.data + 1) / 2.0
+
+
+def plot_error_bars():
+    """ Plot error bar graph """
+
+    N = 2
+    gan_means = (2.3289, 1.5539)
+    gan_std = (0.2061, 0.1775)
+
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.25       # the width of the bars
+
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, gan_means, width, color='#8290F9', yerr=gan_std)
+
+    wgan_means = (2.3809, 1.4664)
+    wgan_std = (0.2800, 0.1394)
+    rects2 = ax.bar(ind + width, wgan_means, width, color='#CDD1FE', yerr=wgan_std)
+
+    # add some text for labels, title and axes ticks
+    ax.set_ylabel('Score',fontsize=16)
+    ax.set_xticks(ind + width / 2)
+    ax.set_xticklabels(('Inception', 'Mode'),fontsize=16)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(12)
+
+    ax.legend((rects1[0], rects2[0]), ('GAN', 'WGAN'), loc="upper right", fontsize=16)
+    plt.tight_layout()
+    plt.savefig('score.png', dpi=200)
 
 
 class AvgMeter(object):

@@ -63,8 +63,8 @@ if __name__ == '__main__':
         action='store', choices=['gan', 'wgan', 'lsgan'], default='gan', type=str)
     parser.add_argument('-p', '--pretrained',
         help='load pretrained model (generator only)', metavar='PATH')
-    parser.add_argument('-d', '--dir', help='output directory for interpolation',
-        default='./interpolated')
+    parser.add_argument('-d', '--dir', help='output directory for interpolation/latent play',
+        default='./out')
     parser.add_argument('-f', '--nb-frames', help='number of frames', metavar='N', default=10, type=int)
     parser.add_argument('-v', '--video', help='turn frames into video/gif',
         action='store_true')
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         torch.manual_seed(args.latent_play)
         z0 = gan.create_latent_var(1)
         img = gan.generate_img(z0)
-        fname_in = 'dim_og.png'
+        fname_in = '{}/dim_og.png'.format(args.dir)
         img = utils.unnormalize(img)
         torchvision.utils.save_image(img, fname_in, padding=0)
         for i in range(100):
@@ -136,6 +136,5 @@ if __name__ == '__main__':
             print('i={:2d}, z={:2.4f}'.format(i, z))
             img = gan.generate_img(z1)
             img = utils.unnormalize(img)
-            fname_in = 'dim{:d}.png'.format(i)
+            fname_in = '{}/dim{:d}.png'.format(args.dir, i)
             torchvision.utils.save_image(img, fname_in, padding=0)
-            #torchvision.utils.save_image(img, fname_out)

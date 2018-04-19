@@ -304,7 +304,7 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
 
 
 \subsection{Latent Space Exploration}
-To explore the face manifold in latent space, we iterated over all $10^2$ dimensions of two given $\*z$'s and changed the value to $\pm 3\sigma^2 = \pm 3$ to amplify the signal. We selected the dimensions we thought gave the most notable differences and plot them (Fig. \ref{latent_explore}). Among the visual variations we observed are open/close mouth, skin color, hair fringe, hair colour, cheek and jaw shape, background, and gender changes. Interestingly, we also have a semblance of face orientation change in the woman case (first and fourth from the right).
+To explore the face manifold in latent space, we iterated over all $10^2$ dimensions of two given $\*z$'s and changed the value to $\pm 3\sigma^2 = \pm 3$ to amplify the signal. We selected the dimensions we thought gave the most notable differences and plot them (Fig. \ref{latent_explore}). Among the visual variations we observed are open/close mouth, skin color, hair fringe, hair colour, cheek and jaw shape, background, and gender changes. Interestingly, we also have a semblance of face orientation change in the woman case for GAN (first and fourth from the right).
 \begin{figure}[ht]
   \centering
   \begin{subfigure}{\textwidth}
@@ -322,6 +322,8 @@ To explore the face manifold in latent space, we iterated over all $10^2$ dimens
   \caption{Changing a single dimension in latent space for different generative models. Original face $\*x = G(\*z)$ is the left-most image.}
   \label{latent_explore}
 \end{figure}
+
+\fbox{\color{red}TODO: Discuss main differences in quality}
 
 \subsection{Screen and Latent Space Interpolation}
 Interpolating in screen space (Fig. \ref{screen_lerp}) obviously gave very poor results as we simply interpolate between pixels and completely disregard the underlying structure of the generator $G$. Only the first and last images look like actual human faces; anything in the middle has ghosting artifacts since it is just a blend of RGB channels.
@@ -370,9 +372,16 @@ To better visualize the interpolation process, we created looping GIFs (and MP4 
   \label{latent_lerp}
 \end{figure}
 
+\newpage
 \section{Quantitative Evaluations}
 \subsection{Results for Inception and Mode Score}
-\fbox{\color{red}TODO}
+We computed the Inception score and Mode score for both models using $N=1024$ generated images. The results are shown in the bar graph below.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[scale=0.45]{imgs/score}
+  \caption{Evaluating the performance of our trained GAN and WGAN using different metrics.}
+\end{figure}
 
 \subsection{Discussion on Scoring Methods}
 \fbox{\color{red}TODO}
@@ -388,31 +397,31 @@ To better visualize the interpolation process, we created looping GIFs (and MP4 
   \centering
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.4]{imgs/gan_epoch50}
+    \includegraphics[scale=0.38]{imgs/gan_epoch50}
     \caption{Vanilla GAN}
   \end{subfigure}
 
   \vspace*{3mm}
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.4]{imgs/wgan_epoch50}
+    \includegraphics[scale=0.38]{imgs/wgan_epoch50}
     \caption{WGAN}
   \end{subfigure}
-  \caption{100 generated images using both models trained for 50 epochs. All images look more or less plausible, with no mode collapse.}
+  \caption{100 generated images using both models trained for 50 epochs. All images look more or less plausible, but we can note a small mode collapse in the case of the vanilla GAN as multiple values of $\*z$ map to the same image (1,2). }
 \end{figure}
 
 \begin{figure}[ht]
   \centering
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.4]{imgs/lsgan_epoch44}
+    \includegraphics[scale=0.38]{imgs/lsgan_epoch44}
     \caption{LSGAN after 44 epochs}
   \end{subfigure}
 
   \vspace*{3mm}
   \begin{subfigure}{\textwidth}
     \centering
-    \includegraphics[scale=0.4]{imgs/lsgan_epoch50}
+    \includegraphics[scale=0.38]{imgs/lsgan_epoch50}
     \caption{LSGAN after 50 epochs}
   \end{subfigure}
   \caption{100 generated images using our trained LSGAN using the same hyperparameters as the vanilla GAN. Total mode collapse occurs at the end of training time.}

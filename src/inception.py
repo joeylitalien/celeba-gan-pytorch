@@ -162,22 +162,18 @@ def mode_score(imgs, real_imgs, cuda=True, batch_size=32, resize=False, splits=1
     return np.mean(split_scores), np.std(split_scores)
 
 if __name__ == "__main__":
+    """
     gan = DCGAN()
     gan.load_model("checkpoints/trained_wgan/wgan-gen.pt", use_cuda=False)
-    gan.eval()
-    # gen_imgs = gan.generate_img(n=32*20)
-    # gen_imgs = TensorDataset(gen_imgs.data, gen_imgs.data)
-    # print(inception_score(gen_imgs, resize=True))
-    #
-    # real_imgs = utils.load_dataset("../data/celebA_all", 32)
-    # real_imgs = itertools.islice(real_imgs, 20)
-    # print(mode_score(gen_imgs, real_imgs, resize=True))
+    gen_imgs = gan.generate_img(n=32*2)
+    gen_imgs = TensorDataset(gen_imgs.data, gen_imgs.data)
+    print("Computing Inception score...")
+    print(inception_score(gen_imgs, cuda=False, resize=True, splits=4))
 
-    # 6-> 25
-    # 16-> 42
-    # 57 -> 85
-    # 95 -> 111
-    for i in range(20):
-        img = gan.generate_img().squeeze()
-        img = utils.unnormalize(img)
-        torchvision.utils.save_image(img, "img{}.png".format(i))
+    print("Computing Mode score...")
+    real_imgs = utils.load_dataset("../data/celebA_all", 32)
+    real_imgs = itertools.islice(real_imgs, 2)
+    print(mode_score(gen_imgs, real_imgs, cuda=False, resize=True, splits=4))
+    """
+    utils.plot_error_bars()
+    #x1, x2, err, ['GAN', 'WGAN'], 'Inception score', 'Inception score for different generative models', 'score.png')
