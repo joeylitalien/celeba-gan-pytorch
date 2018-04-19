@@ -114,8 +114,12 @@ class CelebA(object):
     def eval(self, n, epoch=None, while_training=False):
         """Sample examples from generator's distribution"""
 
+        # Evaluation mode
         self.gan.G.eval()
+
+        # Montage size (square)
         m = int(np.sqrt(n))
+
         # Predict images to see progress
         for i in range(n):
             # Reuse fixed latent variables to keep random process intact
@@ -143,9 +147,6 @@ class CelebA(object):
         start = datetime.datetime.now()
 
         g_iter, d_iter = 0, 0
-        #n_critic = 100 if g_iter < 25 or (g_iter + 1) % 500 == 0 else self.n_critic
-        n_critic = self.n_critic
-
 
         # Train
         for epoch in range(nb_epochs):
@@ -156,11 +157,21 @@ class CelebA(object):
             avg_time_per_batch = utils.AvgMeter()
             # Mini-batch SGD
             for batch_idx, (x, _) in enumerate(data_loader):
+
+                # Critic update ratio
+                if self.gan_type == 'wgan':
+                    n_critic = 20 if g_iter < 50 or (g_iter + 1) % 500 == 0 else self.n_critic
+                else:
+                    n_critic = self.n_critic
+
+                # Training mode
                 self.gan.G.train()
 
-                if x.shape[0] != self.batch_size:
+                # Discard last examples to simplify code
+                if x.size(0) != self.batch_size:
                     break
                 batch_start = datetime.datetime.now()
+
                 # Print progress bar
                 utils.progress_bar(batch_idx, self.batch_report_interval,
                     G_losses.avg, D_losses.avg)
@@ -172,42 +183,13 @@ class CelebA(object):
                 # Update discriminator
                 D_loss, fake_imgs = self.gan.train_D(x, self.D_optimizer, self.batch_size)
                 D_losses.update(D_loss, self.batch_size)
-                #d_iter += 1
+                d_iter += 1
 
                 # Update generator
                 if batch_idx % n_critic == 0:
                     G_loss = self.gan.train_G(self.G_optimizer, self.batch_size)
                     G_losses.update(G_loss, self.batch_size)
-                    #g_iter += 1
-                """
-                # leafs
-                z_dim = 100
-                bs = x.size(0)
-                z = Variable(torch.randn(bs, z_dim))
-                z = z.cuda()
-
-                f_imgs = self.gan.G(z)
-
-                # train D
-                r_logit = self.gan.D(x)
-                f_logit = self.gan.D(f_imgs.detach())
-                d_r_loss = torch.mean((r_logit - 1) ** 2)
-                d_f_loss = torch.mean(f_logit ** 2)
-                d_loss = d_r_loss + d_f_loss
-
-                self.gan.D.zero_grad()
-                d_loss.backward()
-                self.D_optimizer.step()
-
-                # train G
-                f_logit = self.gan.D(f_imgs)
-                g_loss = torch.mean((f_logit - 1) ** 2)
-
-                self.gan.D.zero_grad()
-                self.gan.G.zero_grad()
-                g_loss.backward()
-                self.G_optimizer.step()
-                """
+                    g_iter += 1
 
                 batch_end = datetime.datetime.now()
                 batch_time = int((batch_end - batch_start).total_seconds() * 1000)
@@ -221,6 +203,7 @@ class CelebA(object):
                     utils.show_learning_stats(batch_idx, self.num_batches, G_losses.avg, D_losses.avg, avg_time_per_batch.avg)
                     [k.reset() for k in [G_losses, D_losses, avg_time_per_batch]]
                     self.eval(100, epoch=epoch, while_training=True)
+                    # print('Critic iter: {}'.format(g_iter))
 
                 # Save stats
                 if batch_idx % self.save_stats_interval == 0 and batch_idx:
@@ -244,13 +227,20 @@ if __name__ == '__main__':
 
     # Argument parser
     parser = argparse.ArgumentParser(description='Generative adversarial network (GAN) implementation in PyTorch')
-    parser.add_argument('-c', '--ckpt', help='checkpoint path', metavar='PATH',
+    parser.add_argument('-d', '--ckpt', help='checkpoint path', metavar='PATH',
         default='./checkpoints')
-    parser.add_argument('-t', '--type', help='model type: gan | wgan | lsgan',
+    parser.add_argument('-t', '--type', help='model type',
         action='store', choices=['gan', 'wgan', 'lsgan'], default='gan', type=str)
     parser.add_argument('-r', '--redux', help='train on smaller dataset with 10k faces',
         action='store_true')
+    parser.add_argument('-o', '--optimizer', help='sgd optimizer',
+        choices=['adam', 'rmsprop'], default='adam', type=str)
+    parser.add_argument('-lr', '--learning-rate', help='learning rate',
+        default=0.0002, type=float)
+    parser.add_argument('-bs', '--batch-size', help='sgd minibatch size',
+        default=64, type=int)
     parser.add_argument('-n', '--nb-epochs', help='number of epochs', default=10, type=int)
+    parser.add_argument('-c', '--critic', help='d/g update ratio (critic)', default=1, type=int)
     parser.add_argument('-s', '--seed', help='random seed for debugging', type=int)
     parser.add_argument('-gpu', '--cuda', help='use cuda', action='store_true')
     args = parser.parse_args()
@@ -259,7 +249,7 @@ if __name__ == '__main__':
     gan_params = {
         'gan_type': args.type,
         'latent_dim': 100,
-        'n_critic': 3
+        'n_critic': args.critic
     }
 
     # Training parameters (saving directory, learning rate, optimizer, etc.)
@@ -268,9 +258,9 @@ if __name__ == '__main__':
         'gen_dir': './../generated',
         'batch_size': 64,
         'train_len': 12800 if args.redux else 202599,
-        'learning_rate': 0.00005,
+        'learning_rate': args.learning_rate,
         'momentum': (0.5, 0.999),
-        'optim': 'rmsprop',
+        'optim': args.optimizer,
         'use_cuda': args.cuda
     }
 
@@ -289,6 +279,5 @@ if __name__ == '__main__':
     if args.seed:
         torch.manual_seed(args.seed)
 
-    #model.eval(10, 1)
     # Train
     model.train(args.nb_epochs, data_loader)

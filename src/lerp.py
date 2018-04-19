@@ -77,6 +77,7 @@ if __name__ == '__main__':
 
     # Compile GAN and load model (either on CPU or GPU)
     gan = DCGAN(gan_type=args.type, use_cuda=args.cuda)
+    gan.eval()
     if torch.cuda.is_available() and args.cuda:
         gan = gan.cuda()
     gan.load_model(filename=args.pretrained, use_cuda=args.cuda)

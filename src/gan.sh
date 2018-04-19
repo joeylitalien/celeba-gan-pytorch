@@ -1,4 +1,4 @@
 ./train.py --type gan \
-           --nb-epochs 10 \
+           --nb-epochs 100 \
            --ckpt checkpoints/test \
            --cuda
