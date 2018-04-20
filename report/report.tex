@@ -436,7 +436,7 @@ To explore the face manifold in latent space, we iterated over all $10^2$ dimens
   \label{latent_explore}
 \end{figure}
 
-Note that we had to handpick the samples for the WGAN given the poor quality of the model. It is still interesting to see that the latent space exploration somewhat gives sensible results even when the model's generative performance is poor.
+Note that we had to handpick the samples for the WGAN given the poor quality of the model. It is still interesting to see that the latent space exploration somewhat gives sensible results even when the model's generative performance is poor. One could try to experiment with higher dimensional changes (\textit{e.g.} moving many dimensions at once) as well.
 
 \subsection{Screen and Latent Space Interpolation}
 Interpolating in screen space (Fig. \ref{screen_lerp}) obviously gave very poor results as we simply interpolate between pixels and completely disregard the underlying structure of the generator $G$. Only the first and last images look like actual human faces; anything in the middle has ghosting artifacts since it is just a blend of RGB channels.
@@ -508,13 +508,13 @@ The Inception score is
 \end{align*}
 and the Mode score is
 \begin{align*}
-  \MS(P_g) = \exp\PARENS{\ex_{x\sim P_g} [\KL(p_M(y|x)\|p_M(y))] - \KL(p_M(y) \| p_M(y^*))},
+  \MS(P_g) = \exp\PARENS{\ex_{x\sim P_g} [\KL\big(p_M(y|x)\|p_M(y)\big)] - \KL\big(p_M(y) \| p_M(y^*)\big)},
 \end{align*}
 where $p_M(y|x)$ denotes the label distribution of $x$ as predicted by $M$, $p_M(y)$ is the marginal over the probability measure $P_g$ and $p_M(y^*)$ is the marginal over the real data.
 
 One problem with the Inception score is that it only takes into account the ``crispness'' of the generated images, and leaves out whether the generating distribution actually ressembles that from the real data that we are trying to model. The Mode score corrects for this by adding the second $\KL$ term. We pay a small price in the time it takes to calculate this score however.
 
-Taking this into account, we observe that our vanilla GAN model generates better images than our WGAN model, as reflected by the Inception score. However, our WGAN model has a higher Mode score, indicating that it better models the true data distribution. Nonetheless, we should remain skeptical of this conclusion since a human observer would always prefer the samples from the GAN model than from the WGAN model.
+Taking this into account, we observe that our vanilla GAN model generates better images than our WGAN model, as reflected by the Mode score. This indicates that it better models the true data distribution, as compared to our WGAN model which has a higher Inception score.  Nonetheless, we should remain skeptical of this conclusion since a human observer would always prefer the samples from the GAN model than from the WGAN model.
 
 \newpage
 \bibliography{refs}

@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-IFT6135: Representation Learning
-Assignment 4: Generative Models
-
-Authors:
-    Samuel Laferriere <samuel.laferriere.cyr@umontreal.ca>
-    Joey Litalien <joey.litalien@umontreal.ca>
+Code borrowed from @sbarratt/inception-score-pytorch
 """
 
 from __future__ import print_function
@@ -162,7 +157,7 @@ def mode_score(imgs, real_imgs, cuda=True, batch_size=32, resize=False, splits=1
     return np.mean(split_scores), np.std(split_scores)
 
 if __name__ == "__main__":
-    """
+
     gan = DCGAN()
     gan.load_model("checkpoints/trained_wgan/wgan-gen.pt", use_cuda=False)
     gen_imgs = gan.generate_img(n=32*2)
@@ -174,6 +169,5 @@ if __name__ == "__main__":
     real_imgs = utils.load_dataset("../data/celebA_all", 32)
     real_imgs = itertools.islice(real_imgs, 2)
     print(mode_score(gen_imgs, real_imgs, cuda=False, resize=True, splits=4))
-    """
-    utils.plot_error_bars()
+    #utils.plot_error_bars()
     #x1, x2, err, ['GAN', 'WGAN'], 'Inception score', 'Inception score for different generative models', 'score.png')
