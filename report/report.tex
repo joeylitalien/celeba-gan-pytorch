@@ -144,12 +144,15 @@ Animations of the 50 epochs with fixed latent variables can be found in \code{sr
 
 \subsection{Increasing the Feature Map Size}
 
-To illustrate the three upsampling schemes, we reuse a toy example from \cite{odena2016deconvolution}.
+To illustrate the three upsampling schemes, we reuse a toy example from \cite{odena2016deconvolution}. Here, we used a stride of $s=1$ (in white) and a constant kernel $k=(a,b,c) = \big(\frac{1}{3}, \frac{1}{3},\frac{1}{3}\big)$ of size 3 (in blue). The input vector $\*x$ (in pink) is a discretized color gradient, \textit{i.e.} $\*x = (9,7,5,3,1) \odot 10^{-1} \*1_5$. The upsampled vector $\*y$ is obtained from the matrix $\*C^\top$ and $\*{\hat x}$.
+
+Given an input vector, a fractionally-strided convolution first adds a stride inbetween elements, and then perform a convolution (in blue). This is done in Figure \ref{fsc}, where the kernel is flipped and $\*C^\top$ is a $3 \times 4$ sparse matrix. Note the \textit{checkerboard effect} present in $\*y$ due to kernel overlapping.
+
 
 \newpage
 \begin{figure}[ht]
   \centering
-  \begin{tikzpicture}[scale=0.8, semithick]
+  \begin{tikzpicture}[scale=0.8, semithick,  >=stealth']
     \def\x{5}
     \def\y{2.5}
     % Beams
@@ -164,10 +167,48 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
         \draw[draw=black, fill=gray!75] (\xi,0) rectangle ++(1,0.5);
         \draw[draw=black] (\xi,\y) rectangle ++(1,0.5);
       \else
-        \draw[draw=black, fill=gray!25] (\xi,0) rectangle ++(1,0.5);
-        \draw[draw=black, fill=gray!75] (\xi,\y) rectangle ++(1,0.5);
+       % \draw[draw=black, fill=OrangeRed!90] (\xi,\y) rectangle ++(1,0.5);
       \fi
     }
+    \draw[draw=black, fill=OrangeRed!30] (0,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!53] (1,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!23] (2,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!40] (3,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!17] (4,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!26] (5,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (6,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!13] (7,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!3] (8,0) rectangle ++(1,0.5);
+
+    % Original vector
+    \draw[draw=black, fill=OrangeRed!90] (2,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (3,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (5,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (6,2*\y) rectangle ++(1,0.5);
+    % Middle
+    \draw[draw=black, fill=OrangeRed!90] (0,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (2,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (6,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (8,\y) rectangle ++(1,0.5);
+
+    % Arrows
+    \draw[->] (2.5, 2*\y) -- (0.5, \y+0.6);
+    \draw[->] (3.5, 2*\y) -- (2.5, \y+0.6);
+    \draw[->] (4.5, 2*\y) -- (4.5, \y+0.6);
+    \draw[->] (5.5, 2*\y) -- (6.5, \y+0.6);
+    \draw[->] (6.5, 2*\y) -- (8.5, \y+0.6);
+    % Kernel labels
+    \node at (3.5,0.8) {$a$};
+    \node at (2.5,0.83) {$b$};
+    \node at (1.5,0.8) {$c$};
+    % Node labels
+    \node at (2-0.75,2*\y+0.25) {$\*x$};
+    \node at (-0.75,\y+0.25) {$\hat{\*x}$};
+    \node at (-0.75,0.25) {$\*y$};
+    \node at (-0.75,-2+0.25) {$\*C^\top$};
+    \node[opacity=0] at (10,0) {\phantom{0}};
     % Matrix
     \def\d{-0.75}
     \def\e{0.5}
@@ -180,8 +221,11 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
     \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
     \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
   \end{tikzpicture}
-  \caption{Fractionally-strided convolution.}
+\caption{Fractionally-strided convolution.}
+\label{fsc}
 \end{figure}
+
+In the case of a nearest neighbor (NN) convolution, we first expand $\*x$ by duplicating the elements to obtain $\hat{\*x}$ and then perform the convolution. Doing the arithmetic gives us the matrix $\*C^\top$ depicted in Figure \ref{nnc} below. We observe that the upsampled vector $\*y$ is much more smoother and is free of any artifact other than at its extremes.
 
 \begin{figure}[ht]
   \centering
@@ -194,23 +238,53 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
     % Side beams
     \fill[blue, opacity=0.2] (1, \y) -- (2, 0.5) -- (0, 0.5) -- (0, \y);
     \fill[blue, opacity=0.2] (8, \y) -- (7, 0.5) -- (9, 0.5) -- (9, \y);
-    % Pixels
-    \foreach \xi[count=\i] in {0,...,8}{
-      \if\IsEven{\i}
-        \draw[draw=black, fill=gray!25] (\xi,\y) rectangle ++(1,0.5);
-      \else
-        \draw[draw=black, fill=gray!25] (\xi,0) rectangle ++(1,0.5);
-        \draw[draw=black, fill=gray!75] (\xi,\y) rectangle ++(1,0.5);
-      \fi
-    }
     % Bottom dark
     \foreach \xi[count=\i] in {1,...,7}{
       \draw[draw=black, fill=gray!75] (\xi,0) rectangle ++(1,0.5);
     }
+
+    \draw[draw=black, fill=OrangeRed!90] (0,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!90] (1,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (2,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (3,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (5,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (6,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (7,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (8,\y) rectangle ++(1,0.5);
+
+    \draw[draw=black, fill=OrangeRed!90] (2,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (3,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (5,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (6,2*\y) rectangle ++(1,0.5);
+
+    % Bottom
+    \draw[draw=black, fill=OrangeRed!59] (0,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!83] (1,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!76] (2,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!63] (3,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!56] (4,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!43] (5,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!36] (6,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!23] (7,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!17] (8,0) rectangle ++(1,0.5);
+
+    \draw[->] (2.5, 2*\y) -- (1, \y+0.6);
+    \draw[->] (3.5, 2*\y) -- (3, \y+0.6);
+    \draw[->] (4.5, 2*\y) -- (5, \y+0.6);
+    \draw[->] (5.5, 2*\y) -- (7, \y+0.6);
+    \draw[->] (6.5, 2*\y) -- (9, \y+0.6);
     % Arrows
     \foreach \xi[count=\i] in {0,2,4,6}{
       \draw[->] (\xi+0.75, \y+0.25) -- (\xi+1.3, \y+0.25);
     }
+     % Node labels
+    \node at (2-0.75,2*\y+0.25) {$\*x$};
+    \node at (-0.75,\y+0.25) {$\hat{\*x}$};
+    \node at (-0.75,0.25) {$\*y$};
+    \node at (-0.75,-2+0.25) {$\*C^\top$};
+    \node[opacity=0] at (10,0) {\phantom{0}};
     % Matrix
     \def\d{-0.75}
     \def\e{0.5}
@@ -226,8 +300,10 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
     \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
   \end{tikzpicture}
   \caption{Nearest neighbor convolution.}
+  \label{nnc}
 \end{figure}
 
+Finally, the bilinear resize convolution maps $\*x$ to $\hat{\*x}$ by interpolating between the values. This introduces $\frac{1}{2}$ terms in the deconvolution matrix which needs to be $4 \times 4$ in this case. This is shown in Figure \ref{brc}.
 
 \begin{figure}[ht]
   \centering
@@ -243,22 +319,53 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
     % Pixels
     \foreach \xi[count=\i] in {0,...,8}{
       \if\IsEven{\i}
-        \draw[draw=black, fill=gray!25] (\xi,\y) rectangle ++(1,0.5);
       \else
         \draw[draw=black, fill=gray!25] (\xi,0) rectangle ++(1,0.5);
-        \draw[draw=black, fill=gray!75] (\xi,\y) rectangle ++(1,0.5);
       \fi
     }
-    % Bottom dark
-    \foreach \xi[count=\i] in {1,...,7}{
-      \draw[draw=black, fill=gray!75] (\xi,0) rectangle ++(1,0.5);
-    }
+
+    \draw[draw=black, fill=OrangeRed!90] (0,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!80] (1,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (2,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!60] (3,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!40] (5,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (6,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!20] (7,\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (8,\y) rectangle ++(1,0.5);
+
+    \draw[draw=black, fill=OrangeRed!90] (2,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!70] (3,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (5,2*\y) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (6,2*\y) rectangle ++(1,0.5);
+
+
+    % Bottom
+    \draw[draw=black, fill=OrangeRed!56] (0,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!79] (1,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!69] (2,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!59] (3,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!50] (4,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!40] (5,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!30] (6,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!20] (7,0) rectangle ++(1,0.5);
+    \draw[draw=black, fill=OrangeRed!10] (8,0) rectangle ++(1,0.5);
+
+    \draw[->] (3, 2*\y) -- (1.5, \y+0.6);
+    \draw[->] (4, 2*\y) -- (3.5, \y+0.6);
+    \draw[->] (5, 2*\y) -- (5.5, \y+0.6);
+    \draw[->] (6, 2*\y) -- (7.5, \y+0.6);
+    % Node labels
+    \node at (2-0.75,2*\y+0.25) {$\*x$};
+    \node at (-0.75,\y+0.25) {$\hat{\*x}$};
+    \node at (-0.75,0.25) {$\*y$};
+    \node at (-0.75,-2+0.25) {$\*C^\top$};
+    \node[opacity=0] at (10,0) {\phantom{0}};
     % Arrows
     \foreach \xi[count=\i] in {0,2,4,6}{
       \draw[->] (\xi+0.75, \y+0.25) -- (\xi+1.3, \y+0.25);
-    }
-    \foreach \xi[count=\i] in {1,3,5,7}{
-      \draw[->] (\xi+1.25, \y+0.25) -- (\xi+0.7, \y+0.25);
+      \draw[->] (\xi+2.25, \y+0.25) -- (\xi+1.7, \y+0.25);
     }
     % Matrix
     \def\d{-0.75}
@@ -277,6 +384,7 @@ To illustrate the three upsampling schemes, we reuse a toy example from \cite{od
     \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
   \end{tikzpicture}
   \caption{Bilinear resize convolution.}
+  \label{brc}
 \end{figure}
 
 \newpage
@@ -375,7 +483,7 @@ To better visualize the interpolation process, we created looping GIFs (and MP4 
 \newpage
 \section{Quantitative Evaluations}
 \subsection{Results for Inception and Mode Score}
-We computed the Inception score and Mode score for both models using $N=1024$ generated images. The results are shown in the bar graph below.
+We computed the Inception score and Mode score for both models using $N=4096$ generated images. The results are shown in the bar graph below.
 
 \begin{figure}[ht]
   \centering

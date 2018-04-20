@@ -128,8 +128,8 @@ def plot_error_bars():
     """ Plot error bar graph """
 
     N = 2
-    gan_means = (2.3289, 1.5539)
-    gan_std = (0.2061, 0.1775)
+    gan_means = (2.7355, 2.3357)
+    gan_std = (0.1558, 0.1417)
 
     ind = np.arange(N)  # the x locations for the groups
     width = 0.25       # the width of the bars
@@ -137,8 +137,8 @@ def plot_error_bars():
     fig, ax = plt.subplots()
     rects1 = ax.bar(ind, gan_means, width, color='#8290F9', yerr=gan_std)
 
-    wgan_means = (2.3809, 1.4664)
-    wgan_std = (0.2800, 0.1394)
+    wgan_means = (2.8347, 2.2646)
+    wgan_std = (0.1736, 0.1270)
     rects2 = ax.bar(ind + width, wgan_means, width, color='#CDD1FE', yerr=wgan_std)
 
     # add some text for labels, title and axes ticks
