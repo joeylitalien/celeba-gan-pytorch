@@ -412,7 +412,7 @@ Against all odds, it seems like our GAN outperforms our WGAN. Even if the latter
 
 
 \subsection{Latent Space Exploration}
-To explore the face manifold in latent space, we iterated over all $10^2$ dimensions of two given $\*z$'s and changed the value to $\pm 3\sigma^2 = \pm 3$ to amplify the signal. We selected the dimensions we thought gave the most notable differences and plot them in Figure \ref{latent_explore}. Among the visual variations we observed are open/close mouth, skin color, hair fringe, hair colour, cheek and jaw shape, background, and gender changes. Interestingly, we also have a semblance of face orientation change in the woman case for GAN (first and fourth from the right).
+To explore the face manifold in latent space, we iterated over all $10^2$ dimensions of two given $\*z$'s and changed the value to $\pm 3\sigma^2 = \pm 3$ to amplify the signal. We selected the dimensions we thought gave the most notable differences and plotted them in Figure \ref{latent_explore}. Some of the visual variations we observed are open/close mouth, skin color, hair fringe, hair colour, cheek and jaw shape, background, and gender changes. Interestingly, we also have a semblance of face rotation with the woman in the Vanilla GAN (first and fourth from the right).
 \begin{figure}[ht]
   \centering
   \begin{subfigure}{\textwidth}
@@ -497,6 +497,16 @@ We computed the Inception score and Mode score for both models using $N=4096$ ge
 
 \subsection{Discussion on Scoring Methods}
 \fbox{\color{red}TODO}
+
+The Inception score is
+$$ IS(P_g) = \e^{\ex_{x~P_g} [KL(p_M(y|x)||p_M(y))]} $$
+and the mode score is
+$$ IS(P_g) = \e^{\ex_{x~P_g} [KL(p_M(y|x)||p_M(y))] - KL(p_M(y) || p_M(y*))} $$
+where $p_M(y|x)$ denotes he label distribution of $x$ as predicted by $M$, $p_M(y)$ is the marginal over the probability measure $P_g$ and $p_M(y*)$ is the marginal over the real data.
+\\
+One problem with the Inception score is that it only takes into account the ``crispness'' of the generated images, and leaves out whether the generating distribution actually ressembles that from the real data that we are trying to model. The mode score corrects for this by adding the second $KL$ term. We pay a small price in the time it takes to calculate this score however.
+\\
+Taking this into account, we observe that our vanilla GAN model generates better images than our WGAN model, as reflected by the Inception score. However, our WGAN model has a higher mode score, indicating that it better models the true data distribution. Nonetheless, we should remain skeptical of this conclusion since a human observer would always prefer the samples from the GAN model than from the WGAN model.
 
 \newpage
 \bibliography{refs}
