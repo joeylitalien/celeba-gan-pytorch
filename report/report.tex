@@ -63,7 +63,7 @@ Prof. Aaron Courville \\
 
 For this assignment, we chose to implement in PyTorch a Generative Adversarial Network (GAN) as first introduced by \cite{gan}. The variant we used for comparison is a Wasserstein GAN (WGAN) from \cite{wgan}. The class \code{DCGAN} implements a Deep Convolutional GAN and contains both a \code{Discriminator} $D$ and \code{Generator} $G$. Both entities can be trained independently using the methods \code{DCGAN.train\_*}, meaning that we can customize the number of times we update each model. These training routines implement three types of loss functions: the original minmax loss, the Wasserstein loss and the least squares lost from \cite{lsgan}. The last GAN type will not be evaluated in this assignment, but generated images from our LSGAN are available in the Appendix.
 
-Every hyperparameter related to training (\textit{e.g.} learning rate and momentum) is set in \code{CelebA}, a wrapper class for the generative task at hand. To load a pre-trained generative model and sample images from its distribution, simply instantiate \code{DCGAN}, call \code{DCGAN.load_model(filename)} with the saved PyTorch weights, and run \code{DCGAN.generate_img(n)}.
+Every hyperparameter related to training (\textit{e.g.} learning rate and momentum) is set in \code{CelebA}, a wrapper class for the generative task at hand. To load a pre-trained generative model and sample images from its distribution, simply instantiate \code{DCGAN}, call \code{DCGAN.load_model(fname)} with the saved PyTorch weights, and run \code{DCGAN.generate_img(n)}.
 
 %If no arguments is passed, the GAN will sample a random latent variable $\*z$ and return a generated image. This function also accepts a latent variable generated from a fixed RNG seed.
 
@@ -100,7 +100,7 @@ In & Out & Module & $k$ & $s$ & $p$ & Normalization & Activation  \\
 512 & 1 & Conv2D & 4 & 1 & 0& None & None \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{DCGAN Discriminator architecture.}
+\caption{DCGAN Discriminator architecture}
 \end{table}
 
 As suggested in the paper, we did not apply batchnorm to $G$'s output layer and $D$'s input layer to avoid sample oscillation and model instability. The latent variable is first project to a $512 \times 4 \times 4 = 8192$-dimensional vector using a dense layer and then reshaped to a volume of $512 \times 4 \times 4$ for the first fractionally-strided convolution. We used a kernel size of 4 instead of 5 and removed all biases in the generator network to speed up the computations.
@@ -120,7 +120,7 @@ SGD Optimizers & --- & Adam  & RMSProp \\
 $D/G$ updates ratio & $n_{\textsf{critic}}$ & 1 & 5 \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{Training hyperparameters for DCGAN and WGAN.}
+\caption{Training hyperparameters for DCGAN and WGAN}
 \end{table}
 
 These parameters are the ones suggested by the original authors and tested on the LSUN dataset. We experimented with different values (\textit{e.g.} Adam for WGAN) but GANs being incredibly hard to train, we settled for these values. Theoretically, the discriminator in a WGAN should be fully converged to get the best estimate of the Wasserstein distance but in practice this does not work so well. Hence, if $G_\textsf{iter}$ is the number of times $G$ has been updated so far in the training and $n_\textsf{critic}$ is the number of times $D$ is updated before $G$ is updated once, we started with $n_\textsf{critic} = 20$ for $G_\textsf{iter} < 50$ (1000 minibatches) or whenever $G_\textsf{iter}+1 \pmod{500} = 0$. This number is reduced to 5 otherwise. This is rather arbitrary but somewhat follows the heuristic described by Arjovsky himself on his \href{https://github.com/martinarjovsky/wassersteingan}{GitHub repo} of the original WGAN.
@@ -137,7 +137,7 @@ Vanilla GAN & 3 hrs 34 mins & 4 mins 15 s & 56 ms  \\
 WGAN & 2 hrs 38 mins & 3 mins 9 s & 35 ms \\
 \Xhline{2\arrayrulewidth}
 \end{tabular}
-\caption{Training our vanilla GAN and Wassterstein GAN on an NVIDIA GTX 1080.}
+\caption{Training our vanilla GAN and Wassterstein GAN on an NVIDIA GTX 1080}
 \end{table}
 
 Animations of the 50 epochs with fixed latent variables can be found in \code{src/checkpoints} under each model's \code{video} folder.
@@ -221,7 +221,7 @@ Given an input vector, a fractionally-strided convolution first adds a stride in
     \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
     \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
   \end{tikzpicture}
-\caption{Fractionally-strided convolution.}
+\caption{Fractionally-strided convolution}
 \label{fsc}
 \end{figure}
 
@@ -299,7 +299,7 @@ In the case of a nearest neighbor (NN) resize convolution, we first expand $\*x$
     \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
     \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
   \end{tikzpicture}
-  \caption{Nearest neighbor convolution.}
+  \caption{Nearest-neighbor upsampling + Convolution}
   \label{nnc}
 \end{figure}
 
@@ -383,7 +383,7 @@ Finally, the bilinear resize convolution maps $\*x$ to $\hat{\*x}$ by interpolat
     \draw (\e/3,\d/2) -- (0,\d/2) -- (0,4*\d + \d/2) -- (\e/3, 4*\d + \d/2);
     \draw (9-\e/3,\d/2) -- (9,\d/2) -- (9,4*\d + \d/2) -- (9-\e/3, 4*\d + \d/2);
   \end{tikzpicture}
-  \caption{Bilinear resize convolution.}
+  \caption{Bilinear upsampling + Convolution}
   \label{brc}
 \end{figure}
 
@@ -408,7 +408,9 @@ Finally, the bilinear resize convolution maps $\*x$ to $\hat{\*x}$ by interpolat
     \label{compare}
 \end{figure}
 
-Against all odds, it seems like our GAN outperforms our WGAN. Even if the latter does not show any sign of partial mode collapse as compared to the former (so more diverse, see Appendix), the quality of the samples produced by the vanilla DCGAN are clearly superior. Our GAN's outputs are more crisp and less blurry. In particular, the Wasserstein GAN samples look more like oil paintings and very few samples could be confused with an actual human face.
+Against all odds, it seems like our GAN outperforms our WGAN. Even if the latter does not show any sign of partial mode collapse as compared to the former (so more diverse, see Appendix), the quality of the samples produced by the vanilla DCGAN are clearly superior. Our GAN's outputs are more crisp and less blurry. In particular, the Wasserstein GAN samples look more like oil paintings and very few samples could be confused with an actual human face. It is unclear why this is the case, as with anything related to GANs really.
+
+To improve our models, the main direction would be to use bigger images (\textit{e.g.} $3 \times 128 \times 128$) and experiment more with the heuristic used for setting $n_\textsf{critic}$ in the contect of WGANs. In particular, monitoring the loss more closely could ensure our generator converges. Another possibility would be to use gradient penalty from \cite{wgangp} instead of weight clipping to enforce the Lipschitz constraint. One final possibility would be to go deeper and add an extra layer in the discriminator architecture so that the sequence goes $100 \to 1024 \to 512 \to \cdots$ instead of $100 \to 512 \to \cdots$.
 
 
 \subsection{Latent Space Exploration}
