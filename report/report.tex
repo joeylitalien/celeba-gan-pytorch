@@ -63,7 +63,7 @@ Prof. Aaron Courville \\
 
 For this assignment, we chose to implement in PyTorch a Generative Adversarial Network (GAN) as first introduced by \cite{gan}. The variant we used for comparison is a Wasserstein GAN (WGAN) from \cite{wgan}. The class \code{DCGAN} implements a Deep Convolutional GAN and contains both a \code{Discriminator} $D$ and \code{Generator} $G$. Both entities can be trained independently using the methods \code{DCGAN.train\_*}, meaning that we can customize the number of times we update each model. These training routines implement three types of loss functions: the original minmax loss, the Wasserstein loss and the least squares lost from \cite{lsgan}. The last GAN type will not be evaluated in this assignment, but generated images from our LSGAN are available in the Appendix.
 
-Every hyperparameter related to training (\textit{e.g.} learning rate and momentum) are set in \code{CelebA}, a wrapper class for the generative task at hand. To load a pre-trained generative model and sample images from its distribution, simply instantiate \code{DCGAN}, call \code{DCGAN.load_model(filename)} with the saved PyTorch weights, and run \code{DCGAN.generate_img(n)}.
+Every hyperparameter related to training (\textit{e.g.} learning rate and momentum) is set in \code{CelebA}, a wrapper class for the generative task at hand. To load a pre-trained generative model and sample images from its distribution, simply instantiate \code{DCGAN}, call \code{DCGAN.load_model(filename)} with the saved PyTorch weights, and run \code{DCGAN.generate_img(n)}.
 
 %If no arguments is passed, the GAN will sample a random latent variable $\*z$ and return a generated image. This function also accepts a latent variable generated from a fixed RNG seed.
 
