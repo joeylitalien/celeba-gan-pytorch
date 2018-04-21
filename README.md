@@ -2,10 +2,10 @@
 ### IFT6135 Representation Learning --- Assignment 4
 
 ### Dependencies
-Tested on Python 2.7.x / 3.6.x.
+Tested on 3.6.x.
 * [PyTorch](http://pytorch.org/) (0.3.0)
 * [NumPy](http://www.numpy.org/) (1.13.3)
-* [Pickle](https://docs.python.org/3/library/pickle.html) (0.7.4)
+* [ffmpeg](https://www.ffmpeg.org)
 
 
 ### Small dataset
@@ -25,7 +25,17 @@ GAN | WGAN
 
 
 ## Interpolation in latent space
-`./lerp.py -p checkpoints/gan/dcgan-gen.pt -ll 560 580` will linearly interpolate between two random tensors generated from seeds 560 and 580. Use `./lerp.py --h` for more details how to use it.
+To perform linear interpolation in *latent space*, run
+
+```
+./lerp.py --pretrained ./checkpoints/gan/dcgan-gen.pt \
+          --dir ./out \
+          --latent 140 180 \
+          --nb-frames 50 \
+          --video \
+          --cuda
+``` 
+This will linearly interpolate between two random *tensors* generated from seeds 140 and 180 and create a GIF/MP4 videos of the sequence. The frames and videos will be stored in `./out`.
 
 
 <table align="center">
@@ -51,6 +61,17 @@ GAN | WGAN
 
   
 ## Interpolation in screen space
+To perform linear interpolation in *screen space*, run
+
+```
+./lerp.py --pretrained ./checkpoints/gan/dcgan-gen.pt \
+          --dir ./out \
+          --screen 140 180 \
+          --nb-frames 50 \
+          --video \
+          --cuda
+``` 
+This will linearly interpolate between two random *images* generated from seeds 140 and 180 and create a GIF/MP4 videos of the sequence.
 
 <table align="center">
   <tr align="center">
