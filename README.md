@@ -12,18 +12,16 @@ Tested on Python 2.7.x / 3.6.x.
 Available [here](https://drive.google.com/open?id=1p6WtrxprsjsiedQJkKVoiqvdrP1m9BuF).
 
 ## Training
-
-![gantraining](src/checkpoints/trained_gan/gan_anim.gif) ![gantraining](src/checkpoints/trained_wgan/wgan_anim.gif)
-![gantraining](src/checkpoints/trained_lsgan/lsgan_anim.gif)
-
+GAN | WGAN | LSGAN 
+:--------------------------------------------:|:------------------------------------------------:|:------------------------------------------------:
+![](src/checkpoints/trained_gan/gan_anim.gif) | ![](src/checkpoints/trained_wgan/wgan_anim.gif) | ![](src/checkpoints/trained_lsgan/lsgan_anim.gif)
 
 ## Latent space exploration
 
-![latentexplore-gan](explore/latent_dims/gan/gan_men_latent_play.png)
-![latentexplore-gan](explore/latent_dims/gan/gan_women_latent_play.png)
+GAN | WGAN
+:--------------------------------------------:|:------------------------------------------------:|
+![latentexplore-gan](report/imgs/gan_latent_play.png) | ![latentexplore-gan](report/imgs/wgan_latent_play.png)
 
-![latentexplore-wgan](explore/latent_dims/wgan/wgan_men_latent_play.png)
-![latentexplore-wgan](explore/latent_dims/wgan/wgan_women_latent_play.png)
 
 
 ## Interpolation in latent space
