@@ -27,20 +27,48 @@ GAN | WGAN
 ## Interpolation in latent space
 `./lerp.py -p checkpoints/gan/dcgan-gen.pt -ll 560 580` will linearly interpolate between two random tensors generated from seeds 560 and 580. Use `./lerp.py --h` for more details how to use it.
 
-GAN                                    | WGAN
-:-------------------------------------:|:--------------------------------------:|
-| ![](report/imgs/gan_latent_lerp.png) | ![](report/imgs/wgan_latent_lerp.png)  |
 
-GAN | WGAN
-:--------------------------------------------:|:------------------------------------------------:|
-![](explore/latent_space/gan/1_gan_latent_lerp.gif) ![](explore/latent_space/gan/2_gan_latent_lerp.gif) ![](explore/latent_space/gan/3_gan_latent_lerp.gif) ![](explore/latent_space/gan/4_gan_latent_lerp.gif) | ![](explore/latent_space/wgan/1_wgan_latent_lerp.gif) ![](explore/latent_space/wgan/2_wgan_latent_lerp.gif) ![](explore/latent_space/wgan/3_wgan_latent_lerp.gif) ![](explore/latent_space/wgan/4_wgan_latent_lerp.gif)
+<table align="center">
+  <tr align="center">
+    <td colspan=4>GAN</td>
+    <td colspan=4>WGAN</td>
+  </tr>
+  <tr align="center">
+    <td colspan=4><img src="report/imgs/gan_latent_lerp.png"></td>
+    <td colspan=4><img src="report/imgs/wgan_latent_lerp.png"></td>
+  </tr>  
+  <tr align="center">
+    <td><img src="explore/latent_space/gan/1_gan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/gan/2_gan_latent_lerp.gif"></td>    
+    <td><img src="explore/latent_space/gan/3_gan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/gan/4_gan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/wgan/1_wgan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/wgan/2_wgan_latent_lerp.gif"></td>    
+    <td><img src="explore/latent_space/wgan/3_wgan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/wgan/4_wgan_latent_lerp.gif"></td>
+  </tr>
+</table>
 
+  
 ## Interpolation in screen space
 
-![screenlerpgan](explore/screen_space/gan/1_gan_screen_lerp.gif) ![screenlerpgan](explore/screen_space/gan/2_gan_screen_lerp.gif)
-![screenlerpgan](explore/screen_space/gan/3_gan_screen_lerp.gif)
-![screenlerpgan](explore/screen_space/gan/4_gan_screen_lerp.gif)
-
-![screenlerpwgan](explore/screen_space/wgan/1_wgan_screen_lerp.gif) ![screenlerpwgan](explore/screen_space/wgan/2_wgan_screen_lerp.gif)
-![screenlerpwgan](explore/screen_space/wgan/3_wgan_screen_lerp.gif)
-![screenlerpwgan](explore/screen_space/wgan/4_wgan_screen_lerp.gif)
+<table align="center">
+  <tr align="center">
+    <td colspan=4>GAN</td>
+    <td colspan=4>WGAN</td>
+  </tr>
+  <tr align="center">
+    <td colspan=4><img src="report/imgs/gan_screen_lerp.png"></td>
+    <td colspan=4><img src="report/imgs/wgan_screen_lerp.png"></td>
+  </tr>  
+  <tr align="center">
+    <td><img src="explore/screen_space/gan/1_gan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/gan/2_gan_screen_lerp.gif"></td>    
+    <td><img src="explore/screen_space/gan/3_gan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/gan/4_gan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/wgan/1_wgan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/wgan/2_wgan_screen_lerp.gif"></td>    
+    <td><img src="explore/screen_space/wgan/3_wgan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/wgan/4_wgan_screen_lerp.gif"></td>
+  </tr>
+</table>
