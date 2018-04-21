@@ -27,13 +27,13 @@ GAN | WGAN
 ## Interpolation in latent space
 `./lerp.py -p checkpoints/gan/dcgan-gen.pt -ll 560 580` will linearly interpolate between two random tensors generated from seeds 560 and 580. Use `./lerp.py --h` for more details how to use it.
 
-![latentlerpgan](explore/latent_space/gan/1_gan_latent_lerp.gif) ![latentlerpgan](explore/latent_space/gan/2_gan_latent_lerp.gif)
-![latentlerpgan](explore/latent_space/gan/3_gan_latent_lerp.gif)
-![latentlerpgan](explore/latent_space/gan/4_gan_latent_lerp.gif)
+GAN                                    | WGAN
+:-------------------------------------:|:--------------------------------------:|
+| ![](report/imgs/gan_latent_lerp.png) | ![](report/imgs/wgan_latent_lerp.png)  |
 
-![latentlerpwgan](explore/latent_space/wgan/1_wgan_latent_lerp.gif) ![latentlerpwgan](explore/latent_space/wgan/2_wgan_latent_lerp.gif)
-![latentlerpwgan](explore/latent_space/wgan/3_wgan_latent_lerp.gif)
-![latentlerpwgan](explore/latent_space/wgan/4_wgan_latent_lerp.gif)
+GAN | WGAN
+:--------------------------------------------:|:------------------------------------------------:|
+![](explore/latent_space/gan/1_gan_latent_lerp.gif) ![](explore/latent_space/gan/2_gan_latent_lerp.gif) ![](explore/latent_space/gan/3_gan_latent_lerp.gif) ![](explore/latent_space/gan/4_gan_latent_lerp.gif) | ![](explore/latent_space/wgan/1_wgan_latent_lerp.gif) ![](explore/latent_space/wgan/2_wgan_latent_lerp.gif) ![](explore/latent_space/wgan/3_wgan_latent_lerp.gif) ![](explore/latent_space/wgan/4_wgan_latent_lerp.gif)
 
 ## Interpolation in screen space
 
