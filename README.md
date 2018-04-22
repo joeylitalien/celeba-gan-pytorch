@@ -34,6 +34,8 @@ GAN | WGAN | LSGAN
 :--------------------------------------------:|:------------------------------------------------:|:------------------------------------------------:
 ![](src/checkpoints/trained_gan/gan_anim.gif) | ![](src/checkpoints/trained_wgan/wgan_anim.gif) | ![](src/checkpoints/trained_lsgan/lsgan_anim.gif)
 
+Notice how the LSGAN suffers from total mode collapse at epoch 45.
+
 ## Latent space exploration
 
 To explore the face manifold in latent space, run
@@ -52,7 +54,7 @@ GAN | WGAN
 
 
 
-## Interpolation in latent space
+## Latent space interpolation
 To perform linear interpolation in *latent space*, run
 
 ```
@@ -88,7 +90,7 @@ This will linearly interpolate between two random *tensors* generated from seeds
 </table>
 
   
-## Interpolation in screen space
+## Screen space interpolation
 To perform linear interpolation in *screen space*, run
 
 ```
