@@ -1,5 +1,5 @@
 # CelebA GANs in PyTorch
-### IFT6135 Representation Learning &mdash; Assignment 4
+## [IFT6135 Representation Learning](https://ift6135h18.wordpress.com) (UdeM, A. Courville) &mdash; Assignment 4
 
 ## Dependencies
 Tested on Python 3.6.x.
@@ -123,3 +123,20 @@ This will linearly interpolate between two random *images* generated from seeds 
     <td><img src="explore/screen_space/wgan/4_wgan_screen_lerp.gif"></td>
   </tr>
 </table>
+
+## Authors
+* [Samuel Laferrière](https://github.com/samlaf)
+* [Joey Litalien](https://github.com/joeylitalien)
+
+## References
+
+>Arjovsky et al. [Wasserstein Generative Adversarial Networks](https://arxiv.org/abs/1701.07875). In *Proceedings of the 34th International Conference on Machine Learning*, ICML 2017.
+
+>Goodfellow et al. [Generative Adversarial Nets](https://arxiv.org/abs/1406.2661). In *Advances in Neural Information
+Processing Systems 27: Annual Conference on Neural Information Processing Systems
+2014*, 2014.
+
+>Mao et al. [Multi-class Generative Adversarial Networks with the L2 Loss Function](https://arxiv.org/abs/1511.06434). arXiv,  abs/1611.04076, 2016.
+
+>Radford et al. [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](https://arxiv.org/abs/1511.06434). arXiv, abs/1511.06434, 2015.
+
