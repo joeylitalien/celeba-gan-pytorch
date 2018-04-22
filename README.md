@@ -6,7 +6,7 @@ Tested on Python 3.6.x.
 * [PyTorch](http://pytorch.org/) (0.3.1)
 * [NumPy](http://www.numpy.org/) (1.14.2)
 * [FFmpeg](https://www.ffmpeg.org) (3.4.2)
-* [Imagemagick](https://www.imagemagick.org/script/index.php) (7.0.7)
+* [ImageMagick](https://www.imagemagick.org/script/index.php) (7.0.7)
 
 
 ## CelebA dataset
