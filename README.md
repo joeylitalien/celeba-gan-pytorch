@@ -40,7 +40,7 @@ Notice how the LSGAN suffers from total mode collapse at epoch 45.
 
 To explore the face manifold in latent space, run
 ```
-./lerp.py --pretrained ./checkpoints/gan/dcgan-gen.pt \
+./lerp.py --pretrained ./checkpoints/trained_gan/dcgan-gen.pt \
           --dir ./out \
           --latent-play 140 \
           --cuda
@@ -58,7 +58,7 @@ GAN | WGAN
 To perform linear interpolation in *latent space*, run
 
 ```
-./lerp.py --pretrained ./checkpoints/gan/dcgan-gen.pt \
+./lerp.py --pretrained ./checkpoints/trained_gan/dcgan-gen.pt \
           --dir ./out \
           --latent 140 180 \
           --nb-frames 50 \
@@ -94,7 +94,7 @@ This will linearly interpolate between two random *tensors* generated from seeds
 To perform linear interpolation in *screen space*, run
 
 ```
-./lerp.py --pretrained ./checkpoints/gan/dcgan-gen.pt \
+./lerp.py --pretrained ./checkpoints/trained_gan/dcgan-gen.pt \
           --dir ./out \
           --screen 140 180 \
           --nb-frames 50 \
