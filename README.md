@@ -1,48 +1,149 @@
-# Generative Adversarial Networks
-### IFT6135 Representation Learning --- Assignment 4
+# CelebA GANs in PyTorch
+## [IFT6135 Representation Learning](https://ift6135h18.wordpress.com) (UdeM, A. Courville) &mdash; Assignment 4
 
-### Dependencies
-Tested on Python 2.7.x / 3.6.x.
-* [PyTorch](http://pytorch.org/) (0.3.0)
-* [NumPy](http://www.numpy.org/) (1.13.3)
-* [Pickle](https://docs.python.org/3/library/pickle.html) (0.7.4)
+## Dependencies
+Tested on Python 3.6.x.
+* [PyTorch](http://pytorch.org/) (0.3.1)
+* [NumPy](http://www.numpy.org/) (1.14.2)
+* [FFmpeg](https://www.ffmpeg.org) (3.4.2)
+* [ImageMagick](https://www.imagemagick.org/script/index.php) (7.0.7)
 
 
-### Small dataset
-Available [here](https://drive.google.com/open?id=1p6WtrxprsjsiedQJkKVoiqvdrP1m9BuF).
+## CelebA dataset
+The full [CelebA](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) is available [here](https://drive.google.com/open?id=1p6WtrxprsjsiedQJkKVoiqvdrP1m9BuF). To resize the RGB images to 64 by 64 pixels, run `CelebA_helper.py`.
 
 ## Training
+To train a model, simply specify the model type (`gan`, `wgan` or `lsgan`) with the appropriate hyperparameters. In case these parameters are not specified, the program reverts back to default training parameters from the original papers.
 
-![gantraining](src/checkpoints/trained_gan/gan_anim.gif) ![gantraining](src/checkpoints/trained_wgan/wgan_anim.gif)
-![gantraining](src/checkpoints/trained_lsgan/lsgan_anim.gif)
+```
+./train.py --type wgan \
+           --nb-epochs 50 \
+           --batch-size 64 \
+           --learning-rate 0.00005 \
+           --optimizer rmsprop \
+           --critic 5 \
+           --ckpt ./../checkpoints/trained_wgan \
+           --cuda
+```
 
+This assumes that the training images are in `./../data/celebA_all`. To train using a smaller dataset (*e.g.* 12800 images), create a new folder called `./../data/celebA_redux` and train using the `--redux` flag.
+
+To create GIF/MP4 videos like below, run `src/checkpoints/make_anim.sh trained_*` after training. This will annotate each epoch using Imagemagick and combine them into a single video using FFmpeg.
+
+GAN | WGAN | LSGAN 
+:--------------------------------------------:|:------------------------------------------------:|:------------------------------------------------:
+![](src/checkpoints/trained_gan/gan_anim.gif) | ![](src/checkpoints/trained_wgan/wgan_anim.gif) | ![](src/checkpoints/trained_lsgan/lsgan_anim.gif)
+
+Notice how the LSGAN suffers from total mode collapse at epoch 45.
 
 ## Latent space exploration
 
-![latentexplore-gan](explore/latent_dims/gan/gan_men_latent_play.png)
-![latentexplore-gan](explore/latent_dims/gan/gan_women_latent_play.png)
+To explore the face manifold in latent space, run
+```
+./lerp.py --pretrained ./checkpoints/trained_gan/dcgan-gen.pt \
+          --dir ./out \
+          --latent-play 140 \
+          --cuda
+```
 
-![latentexplore-wgan](explore/latent_dims/wgan/wgan_men_latent_play.png)
-![latentexplore-wgan](explore/latent_dims/wgan/wgan_women_latent_play.png)
+This will use RNG seed 140 to first generate a random tensor of size 100. Then, each dimension will be clamped to &pm; 3 and saved to a new image`./out/dim*.png`. The result is 100 different images that only differ by one dimension from the original image. These images can then be analyzed to figure out which dimension control different generative features (*e.g.* open/close mouth, hair color, gender, nose shape, etc.).
+
+GAN | WGAN
+:--------------------------------------------:|:------------------------------------------------:|
+![latentexplore-gan](report/imgs/gan_latent_play.png) | ![latentexplore-gan](report/imgs/wgan_latent_play.png)
 
 
-## Interpolation in latent space
-`./lerp.py -p checkpoints/gan/dcgan-gen.pt -ll 560 580` will linearly interpolate between two random tensors generated from seeds 560 and 580. Use `./lerp.py --h` for more details how to use it.
 
-![latentlerpgan](explore/latent_space/gan/1_gan_latent_lerp.gif) ![latentlerpgan](explore/latent_space/gan/2_gan_latent_lerp.gif)
-![latentlerpgan](explore/latent_space/gan/3_gan_latent_lerp.gif)
-![latentlerpgan](explore/latent_space/gan/4_gan_latent_lerp.gif)
+## Latent space interpolation
+To perform linear interpolation in *latent space*, run
 
-![latentlerpwgan](explore/latent_space/wgan/1_wgan_latent_lerp.gif) ![latentlerpwgan](explore/latent_space/wgan/2_wgan_latent_lerp.gif)
-![latentlerpwgan](explore/latent_space/wgan/3_wgan_latent_lerp.gif)
-![latentlerpwgan](explore/latent_space/wgan/4_wgan_latent_lerp.gif)
+```
+./lerp.py --pretrained ./checkpoints/trained_gan/dcgan-gen.pt \
+          --dir ./out \
+          --latent 140 180 \
+          --nb-frames 50 \
+          --video \
+          --cuda
+``` 
+This will linearly interpolate between two random *tensors* generated from seeds 140 and 180 and create a GIF/MP4 videos of the sequence. The frames and videos will be stored in `./out`.
 
-## Interpolation in screen space
 
-![screenlerpgan](explore/screen_space/gan/1_gan_screen_lerp.gif) ![screenlerpgan](explore/screen_space/gan/2_gan_screen_lerp.gif)
-![screenlerpgan](explore/screen_space/gan/3_gan_screen_lerp.gif)
-![screenlerpgan](explore/screen_space/gan/4_gan_screen_lerp.gif)
+<table align="center">
+  <tr align="center">
+    <th colspan=4>GAN</td>
+    <th colspan=4>WGAN</td>
+  </tr>
+  <tr align="center">
+    <td colspan=4><img src="report/imgs/gan_latent_lerp.png"></td>
+    <td colspan=4><img src="report/imgs/wgan_latent_lerp.png"></td>
+  </tr>  
+  <tr align="center">
+    <td><img src="explore/latent_space/gan/1_gan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/gan/2_gan_latent_lerp.gif"></td>    
+    <td><img src="explore/latent_space/gan/3_gan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/gan/4_gan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/wgan/1_wgan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/wgan/2_wgan_latent_lerp.gif"></td>    
+    <td><img src="explore/latent_space/wgan/3_wgan_latent_lerp.gif"></td>
+    <td><img src="explore/latent_space/wgan/4_wgan_latent_lerp.gif"></td>
+  </tr>
+</table>
 
-![screenlerpwgan](explore/screen_space/wgan/1_wgan_screen_lerp.gif) ![screenlerpwgan](explore/screen_space/wgan/2_wgan_screen_lerp.gif)
-![screenlerpwgan](explore/screen_space/wgan/3_wgan_screen_lerp.gif)
-![screenlerpwgan](explore/screen_space/wgan/4_wgan_screen_lerp.gif)
+  
+## Screen space interpolation
+To perform linear interpolation in *screen space*, run
+
+```
+./lerp.py --pretrained ./checkpoints/trained_gan/dcgan-gen.pt \
+          --dir ./out \
+          --screen 140 180 \
+          --nb-frames 50 \
+          --video \
+          --cuda
+``` 
+This will linearly interpolate between two random *images* generated from seeds 140 and 180 and create a GIF/MP4 videos of the sequence.
+
+<table align="center">
+  <tr align="center">
+    <th colspan=4>GAN</td>
+    <th colspan=4>WGAN</td>
+  </tr>
+  <tr align="center">
+    <td colspan=4><img src="report/imgs/gan_screen_lerp.png"></td>
+    <td colspan=4><img src="report/imgs/wgan_screen_lerp.png"></td>
+  </tr>  
+  <tr align="center">
+    <td><img src="explore/screen_space/gan/1_gan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/gan/2_gan_screen_lerp.gif"></td>    
+    <td><img src="explore/screen_space/gan/3_gan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/gan/4_gan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/wgan/1_wgan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/wgan/2_wgan_screen_lerp.gif"></td>    
+    <td><img src="explore/screen_space/wgan/3_wgan_screen_lerp.gif"></td>
+    <td><img src="explore/screen_space/wgan/4_wgan_screen_lerp.gif"></td>
+  </tr>
+</table>
+
+## Inception and Mode score
+We reuse the code from [Shane Barratt](https://github.com/sbarratt/inception-score-pytorch) to quantitatively measure our models' performance. Calculating the scores using 4096 samples gives the bar graph below.
+
+<p align="center">
+<img width="50%" src="report/imgs/score.png"/>
+</p>
+
+## Authors
+* [Samuel Laferrière](https://github.com/samlaf)
+* [Joey Litalien](https://github.com/joeylitalien)
+
+## References
+
+>Arjovsky et al. [Wasserstein Generative Adversarial Networks](https://arxiv.org/abs/1701.07875). In *Proceedings of the 34th International Conference on Machine Learning*, ICML 2017.
+
+>Goodfellow et al. [Generative Adversarial Nets](https://arxiv.org/abs/1406.2661). In *Advances in Neural Information
+Processing Systems 27: Annual Conference on Neural Information Processing Systems
+2014*, 2014.
+
+>Mao et al. [Multi-class Generative Adversarial Networks with the L2 Loss Function](https://arxiv.org/abs/1511.06434). arXiv,  abs/1611.04076, 2016.
+
+>Radford et al. [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](https://arxiv.org/abs/1511.06434). arXiv, abs/1511.06434, 2015.
+
