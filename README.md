@@ -70,8 +70,8 @@ This will linearly interpolate between two random *tensors* generated from seeds
 
 <table align="center">
   <tr align="center">
-    <td colspan=4>GAN</td>
-    <td colspan=4>WGAN</td>
+    <th colspan=4>GAN</td>
+    <th colspan=4>WGAN</td>
   </tr>
   <tr align="center">
     <td colspan=4><img src="report/imgs/gan_latent_lerp.png"></td>
@@ -105,8 +105,8 @@ This will linearly interpolate between two random *images* generated from seeds 
 
 <table align="center">
   <tr align="center">
-    <td colspan=4>GAN</td>
-    <td colspan=4>WGAN</td>
+    <th colspan=4>GAN</td>
+    <th colspan=4>WGAN</td>
   </tr>
   <tr align="center">
     <td colspan=4><img src="report/imgs/gan_screen_lerp.png"></td>
