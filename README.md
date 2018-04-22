@@ -124,6 +124,13 @@ This will linearly interpolate between two random *images* generated from seeds 
   </tr>
 </table>
 
+## Inception and Mode score
+We reuse the code from [Shane Barratt](https://github.com/sbarratt/inception-score-pytorch) to quantitatively measure our models' performance. Calculating the scores using 4096 samples gives the bar graph below.
+
+<p align="center">
+<img width="50%" src="report/imgs/score.png"/>
+</p>
+
 ## Authors
 * [Samuel Laferrière](https://github.com/samlaf)
 * [Joey Litalien](https://github.com/joeylitalien)
