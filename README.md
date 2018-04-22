@@ -1,5 +1,5 @@
-# Generative Adversarial Networks
-### IFT6135 Representation Learning --- Assignment 4
+# CelebA GANs in PyTorch
+### IFT6135 Representation Learning &mdash; Assignment 4
 
 ## Dependencies
 Tested on Python 3.6.x.
