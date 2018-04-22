@@ -46,7 +46,7 @@ To explore the face manifold in latent space, run
           --cuda
 ```
 
-This will use RNG seed 140 to first generate a random tensor of size 100. Then, each dimension will be clamped to &pm; 3 and saved to a new image`./o ut/dim*.png`. The result is 100 different images that only differ by one dimension from the original image. These images can then be analyzed to figure out which dimension control different generative features (*e.g.* open/close mouth, hair color, gender, nose shape, etc.).
+This will use RNG seed 140 to first generate a random tensor of size 100. Then, each dimension will be clamped to &pm; 3 and saved to a new image`./out/dim*.png`. The result is 100 different images that only differ by one dimension from the original image. These images can then be analyzed to figure out which dimension control different generative features (*e.g.* open/close mouth, hair color, gender, nose shape, etc.).
 
 GAN | WGAN
 :--------------------------------------------:|:------------------------------------------------:|
